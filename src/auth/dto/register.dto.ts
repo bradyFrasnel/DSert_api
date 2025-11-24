@@ -30,5 +30,5 @@ export class RegisterDto {
         'Le mot de passe doit contenir au moins une majuscule, une minuscule, un chiffre et un caractère spécial',
     },
   )
-  mot_de_passe: string;
+  password: string;
 }

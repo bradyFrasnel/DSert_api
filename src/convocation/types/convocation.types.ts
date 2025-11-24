@@ -34,8 +34,8 @@ export interface ConvocationResponse {
   titre: string;
   description: string | null;
   date_creation: Date;
-  date_debut: Date; // date_convocation
-  date_fin: string | null; // heure_fin (string dans le DTO, pas Date)
+  date_debut: Date;
+  date_fin: string | null;
 
   emetteur: EmployeBase;
   participants: ParticipantResponse[];

@@ -75,7 +75,7 @@ export class AuthService {
       }
 
       // Créer le nouvel employé avec le rôle 'employe' par défaut
-      const hashedPassword = await bcrypt.hash(registerDto.mot_de_passe, 10);
+      const hashedPassword = await bcrypt.hash(registerDto.password, 10);
       
       const newEmploye = await this.prisma.employe.create({
         data: {

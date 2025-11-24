@@ -4,7 +4,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { CreateEmployeDto } from './dto/create-employe.dto';
-import { Employe } from '@prisma/client'; // Importe le type Employe généré par Prisma
+import { Employe } from '@prisma/client';
 
 @Injectable()
 export class EmployeService {
