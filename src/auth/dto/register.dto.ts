@@ -1,4 +1,4 @@
-import { IsString, IsEmail, IsNotEmpty, IsStrongPassword, MinLength, MaxLength, Matches } from 'class-validator';
+import { IsString, IsEmail, IsNotEmpty, IsStrongPassword, MinLength, MaxLength, Matches, IsDate, IsIn } from 'class-validator';
 
 // Le rôle par défaut sera 'employe'
 // Nous n'incluons pas de rôle ici car il sera fixé à 'employe' dans le service d'auth
@@ -6,6 +6,12 @@ export class RegisterDto {
   @IsEmail({}, { message: 'Format d\'email invalide' })
   @IsNotEmpty({ message: 'L\'email est obligatoire' })
   email: string;
+
+  // @IsDate({},)
+  // @IsNotEmpty({ message: 'Le role est obligatoire' })
+  @IsString()
+  @IsIn(['admin', 'manager', 'employe'])
+  role: 'employe' | 'manager' | 'admin';
 
   @IsString({ message: 'Le nom doit être une chaîne de caractères' })
   @IsNotEmpty({ message: 'Le nom est obligatoire' })
@@ -31,4 +37,5 @@ export class RegisterDto {
     },
   )
   password: string;
+  // role: any;
 }

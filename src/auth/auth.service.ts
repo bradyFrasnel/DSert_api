@@ -79,18 +79,19 @@ export class AuthService {
       
       const newEmploye = await this.prisma.employe.create({
         data: {
-          email: registerDto.email,
-          mot_de_passe: hashedPassword,
-          nom_famille: registerDto.nom_famille,
           prenom: registerDto.prenom,
-          role: 'EMPLOYE', // Rôle par défaut
+          nom_famille: registerDto.nom_famille,
+          mot_de_passe: hashedPassword,
+          email: registerDto.email,
+          role: registerDto.role.toUpperCase() as any,
+          // role: 'MANAGER', // Rôle par défaut
           departementId: defaultDepartment.id,
         },
         select: {
           id: true,
-          email: true,
-          nom_famille: true,
           prenom: true,
+          nom_famille: true,
+          email: true,
           role: true,
           departementId: true,
         },
