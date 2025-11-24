@@ -1,0 +1,226 @@
+// This is your Prisma schema file.
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  // Utilisation de l'emplacement par défaut (node_modules/.prisma/client) pour NestJS
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ------------------------------------------
+// 0. Enums
+// ------------------------------------------
+
+enum Role {
+  ADMIN    @map("admin")
+  MANAGER  @map("manager")
+  EMPLOYE  @map("employe")
+}
+
+enum StatutConvocationType {
+  ENVOYE    @map("envoye")
+  LU        @map("lu")
+  ACCEPTE   @map("accepte")
+  REFUSE    @map("refuse")
+  ANNULE    @map("annule")
+}
+
+enum PrioriteConvocation {
+  BASSE      @map("basse")
+  NORMALE    @map("normale")
+  HAUTE      @map("haute")
+  URGENTE    @map("urgente")
+}
+
+// ------------------------------------------
+// 1. Gestion du Personnel et de la Structure
+// ------------------------------------------
+
+model Departement {
+  id            Int         @id @default(autoincrement())
+  nom           String      @unique
+  description   String?
+  date_creation DateTime    @default(now())
+  actif         Boolean     @default(true)
+  
+  // Relations
+  employes      Employe[]
+  
+  @@map("departements")
+}
+
+model Employe {
+  id              String      @id @default(uuid())
+  nom_famille     String
+  prenom          String
+  email           String      @unique
+  mot_de_passe    String      // Doit être stocké haché (Bcrypt)
+  role            Role        @default(EMPLOYE)
+  date_embauche   DateTime    @default(now())
+  date_sortie     DateTime?
+  actif           Boolean     @default(true)
+  
+  // Relations
+  departementId   Int
+  departement     Departement @relation(fields: [departementId], references: [id])
+  
+  // Relations inverses
+  convocationsEmises     Convocation[]       @relation("Emetteur")
+  statutsConvocation     StatutConvocation[]
+  messagesEnvoyes        Message[]           @relation("MessagesAuteur")
+  conversationsCreees    Conversation[]      @relation("CreateurConversation")
+  membresConversation    MembreConversation[]
+  
+  // Index et contraintes
+  @@index([email])
+  @@index([departementId])
+  @@map("employes")
+}
+
+// ------------------------------------------
+// 2. Gestion des Convocations et Traçabilité
+// ------------------------------------------
+
+model Convocation {
+  id                String              @id @default(uuid())
+  titre             String
+  description       String?
+  date_convocation  DateTime
+  heure_debut       String?             // Format: "HH:MM"
+  heure_fin         String?             // Format: "HH:MM"
+  lieu              String
+  priorite          PrioriteConvocation @default(NORMALE)
+  date_creation     DateTime            @default(now())
+  date_mise_a_jour  DateTime            @updatedAt
+  est_annulee       Boolean             @default(false)
+  
+  // Relations
+  emetteurId        String
+  emetteur          Employe             @relation("Emetteur", fields: [emetteurId], references: [id])
+  
+  // Participants (relation many-to-many via StatutConvocation)
+  participants      StatutConvocation[]
+  
+  // Chat associé
+  conversation      Conversation?       @relation(fields: [conversationId], references: [id])
+  conversationId    String?             @unique
+  
+  // Pièces jointes (relation one-to-many)
+  piecesJointes     PieceJointe[]
+  
+  // Index
+  @@index([emetteurId])
+  @@index([date_convocation])
+  @@map("convocations")
+}
+
+model StatutConvocation {
+  // Clé primaire composite
+  convocationId   String
+  employeId       String
+  
+  @@id([convocationId, employeId]) 
+
+  // Données du statut
+  statut          StatutConvocationType @default(ENVOYE)
+  date_mise_a_jour DateTime             @default(now())
+  remarques       String?
+  date_lecture    DateTime?
+  
+  // Relations
+  convocation     Convocation           @relation(fields: [convocationId], references: [id], onDelete: Cascade)
+  employe         Employe               @relation(fields: [employeId], references: [id], onDelete: Cascade)
+  
+  // Index
+  @@index([statut])
+  @@index([date_mise_a_jour])
+  @@map("statuts_convocation")
+}
+
+model PieceJointe {
+  id              String      @id @default(uuid())
+  nom_fichier     String
+  chemin          String      // Chemin du fichier sur le serveur
+  type_mime       String      // Type MIME du fichier
+  taille          Int         // Taille en octets
+  date_upload     DateTime    @default(now())
+  
+  // Relations
+  convocationId   String
+  convocation     Convocation @relation(fields: [convocationId], references: [id], onDelete: Cascade)
+  
+  @@map("pieces_jointes")
+}
+
+// ------------------------------------------
+// 3. Chat de Groupe (Temps Réel)
+// ------------------------------------------
+
+model Conversation {
+  id                String              @id @default(uuid())
+  nom_conversation  String
+  description       String?
+  type_conversation String              // "groupe_convocation" ou "direct_message"
+  date_creation     DateTime            @default(now())
+  est_active        Boolean             @default(true)
+  
+  // Relations
+  convocation       Convocation?       // Nullable pour les conversations directes
+  createurId        String
+  createur          Employe            @relation("CreateurConversation", fields: [createurId], references: [id])
+  
+  // Relations inverses
+  membres           MembreConversation[]
+  messages          Message[]
+  
+  // Index
+  @@index([createurId])
+  @@index([type_conversation])
+  @@map("conversations")
+}
+
+model MembreConversation {
+  id              String        @id @default(uuid())
+  date_ajout     DateTime      @default(now())
+  date_sortie    DateTime?
+  est_admin      Boolean       @default(false)
+  
+  // Relations
+  conversationId String
+  conversation   Conversation  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  
+  employeId      String
+  employe        Employe       @relation(fields: [employeId], references: [id], onDelete: Cascade)
+  
+  // Contrainte d'unicité
+  @@unique([conversationId, employeId])
+  @@map("membres_conversation")
+}
+
+model Message {
+  id              String        @id @default(uuid())
+  contenu         String
+  date_envoi      DateTime      @default(now())
+  est_modifie     Boolean       @default(false)
+  date_modification DateTime?
+  
+  // Relations
+  conversationId  String
+  conversation    Conversation  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  
+  auteurId        String
+  auteur          Employe       @relation("MessagesAuteur", fields: [auteurId], references: [id])
+  
+  // Pour les messages supprimés
+  est_supprime    Boolean       @default(false)
+  
+  // Index
+  @@index([conversationId])
+  @@index([auteurId])
+  @@index([date_envoi])
+  @@map("messages")
+}
