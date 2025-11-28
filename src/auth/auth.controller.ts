@@ -72,6 +72,7 @@ export class AuthController {
     return {
       id: req.user.sub,
       email: req.user.email,
+      mot_de_passe: req.user.mot_de_passe,
       role: req.user.role
     };
   }

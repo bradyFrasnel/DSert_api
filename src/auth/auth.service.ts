@@ -92,6 +92,7 @@ export class AuthService {
           prenom: true,
           nom_famille: true,
           email: true,
+          mot_de_passe: true,
           role: true,
           departementId: true,
         },

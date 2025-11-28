@@ -9,6 +9,9 @@ export class UserPayloadDto {
   email: string;
 
   @IsString()
+  mot_de_passe: string;
+
+  @IsString()
   @IsNotEmpty()
   role: 'admin' | 'manager' | 'employe'; 
 }

@@ -94,4 +94,5 @@ export class CreateConvocationDto {
   @IsOptional()
   @IsUUID(undefined, { each: true, message: 'Chaque ID de pièce jointe doit être un UUID valide' })
   piecesJointes?: string[] = [];
+    employeConvoqueId: any;
 }

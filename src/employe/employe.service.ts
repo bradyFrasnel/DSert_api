@@ -4,7 +4,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { CreateEmployeDto } from './dto/create-employe.dto';
-import { Employe } from '@prisma/client';
+import { Employe } from '@prisma/client'; 
 
 @Injectable()
 export class EmployeService {
@@ -14,18 +14,18 @@ export class EmployeService {
   private readonly SALT_ROUNDS = 10;
 
   // Fonction de hachage de mot de passe
-  private async hashPassword(password: string): Promise<string> {
-    return bcrypt.hash(password, this.SALT_ROUNDS);
+  private async hashmot_de_passe(mot_de_passe: string): Promise<string> {
+    return bcrypt.hash(mot_de_passe, this.SALT_ROUNDS);
   }
 
   // Crée un employé (UTILISATEUR ADMIN INITIAL)
   async create(createEmployeDto: CreateEmployeDto): Promise<Employe> {
-    const hashedPassword = await this.hashPassword(createEmployeDto.mot_de_passe);
+    const hashedmot_de_passe = await this.hashmot_de_passe(createEmployeDto.mot_de_passe);
     
     return this.prisma.employe.create({
       data: {
         ...createEmployeDto,
-        mot_de_passe: hashedPassword,
+        mot_de_passe: hashedmot_de_passe,
         // S'assurer que le rôle est en majuscules
         role: createEmployeDto.role ? createEmployeDto.role.toUpperCase() as any : 'EMPLOYE',
       },

@@ -3,6 +3,7 @@ import { StatutConvocation, PrioriteConvocation } from '@prisma/client';
 export type StatutConvocationType = StatutConvocation;
 export type PrioriteConvocationType = PrioriteConvocation;
 
+
 export interface EmployeBase {
   id: string;
   nom: string;
@@ -40,9 +41,6 @@ export interface ConvocationResponse {
   emetteur: EmployeBase;
   participants: ParticipantResponse[];
   piecesJointes: PieceJointeResponse[];
-
-  // Autres champs que vous pourriez avoir comme lieu, priorite, etc.
-  // ...
 }
 
 /**

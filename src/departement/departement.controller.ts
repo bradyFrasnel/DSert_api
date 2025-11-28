@@ -12,24 +12,27 @@ import { RolesGuard } from '../auth/roles.guard';
 export class DepartementController {
   constructor(private readonly departementService: DepartementService) {}
 
+  // requête pour créer un departement
   @Post()
   @Roles(UserRole.ADMIN)
   create(@Body() createDepartementDto: CreateDepartementDto) {
     return this.departementService.create(createDepartementDto);
   }
 
+  // requête pour trouver tous les departements existants
   @Get()
-  @Roles(UserRole.ADMIN, UserRole.MANAGER, UserRole.EMPLOYE)
   findAll() {
     return this.departementService.findAll();
   }
 
+  // requête pour trouver un departement spécifique
   @Get(':id')
   @Roles(UserRole.ADMIN, UserRole.MANAGER, UserRole.EMPLOYE)
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.departementService.findOne(id);
   }
 
+  // requête pour mettre à jour un departement spécifique
   @Put(':id')
   @Roles(UserRole.ADMIN)
   update(
@@ -39,6 +42,7 @@ export class DepartementController {
     return this.departementService.update(id, updateDepartementDto);
   }
 
+  // requête pour supprimer un departement spécifique
   @Delete(':id')
   @Roles(UserRole.ADMIN)
   remove(@Param('id', ParseIntPipe) id: number) {
