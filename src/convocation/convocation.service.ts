@@ -43,13 +43,13 @@ export class ConvocationService {
     const participantsResponse: ParticipantResponse[] = convocation.participants.map(
       (status): ParticipantResponse => ({
         id: status.employe.id,
-        nom: status.employe.nom_famille, 
+        nom: status.employe.nomFamille, 
         prenom: status.employe.prenom,
         email: status.employe.email,
         statut: status.statut as unknown as StatutConvocationType,
         // statut: status.statut as StatutConvocationType,
-        date_lecture: status.date_lecture,
-        date_mise_a_jour: status.date_mise_a_jour,
+        date_lecture: status.dateLecture,
+        date_mise_a_jour: status.dateMiseAJour,
         remarque: status.remarques, // DB: remarques → API: remarque
       }),
     );
@@ -58,13 +58,13 @@ export class ConvocationService {
       id: convocation.id,
       titre: convocation.titre,
       description: convocation.description,
-      date_creation: convocation.date_creation,
-      date_debut: convocation.date_convocation,
-      date_fin: convocation.heure_fin,
+      date_creation: convocation.dateCreation,
+      date_debut: convocation.dateConvocation,
+      date_fin: convocation.heureFin,
 
       emetteur: {
         id: convocation.emetteur.id,
-        nom: convocation.emetteur.nom_famille,
+        nom: convocation.emetteur.nomFamille,
         prenom: convocation.emetteur.prenom,
         email: convocation.emetteur.email,
       },
@@ -72,11 +72,11 @@ export class ConvocationService {
       participants: participantsResponse,
       piecesJointes: convocation.piecesJointes.map(pj => ({
         id: pj.id,
-        nom_fichier: pj.nom_fichier,
+        nom_fichier: pj.nomFichier,
         chemin: pj.chemin,
-        type_mime: pj.type_mime,
+        type_mime: pj.typeMime,
         taille: pj.taille,
-        date_upload: pj.date_upload,
+        date_upload: pj.dateUpload,
       })),
     };
   }
@@ -103,8 +103,11 @@ export class ConvocationService {
     createConvocationDto: CreateConvocationDto,
     emetteurId: string,
   ): Promise<ConvocationResponse> {
+    console.log('Début de la création de la convocation avec les données:', JSON.stringify(createConvocationDto, null, 2));
+    console.log('ID de l\'émetteur:', emetteurId);
+    
     const { 
-      participants,
+      participants = [],
       piecesJointes = [],
       date_convocation,
       heure_debut,
@@ -112,131 +115,179 @@ export class ConvocationService {
       ...convocationData 
     } = createConvocationDto;
 
-    // 1. Vérifier l'existence de l'émetteur
-    const emetteur = await this.prisma.employe.findUnique({
-      where: { id: emetteurId }
-    });
-    if (!emetteur) {
-      throw new NotFoundException('Émetteur non trouvé');
-    }
-
-    // 2. Vérifier si tous les participants existent
-    const participantsIds = participants.map(p => p.employeId);
-    const existingEmployees = await this.prisma.employe.findMany({
-      where: { id: { in: participantsIds } },
-      select: { id: true },
-    });
-    
-    if (existingEmployees.length !== participantsIds.length) {
-      const existingIds = new Set(existingEmployees.map(e => e.id));
-      const missingIds = participantsIds.filter(id => !existingIds.has(id));
-      throw new BadRequestException(`Les ID d'employés suivants sont introuvables: ${missingIds.join(', ')}`);
-    }
-
-    // 3. Vérifier les pièces jointes
-    if (piecesJointes.length > 0) {
-      const existingPieces = await this.prisma.pieceJointe.count({
-        where: { id: { in: piecesJointes } }
+    try {
+      // 1. Vérifier l'existence de l'émetteur
+      console.log('Vérification de l\'existence de l\'émetteur avec ID:', emetteurId);
+      const emetteur = await this.prisma.employe.findUnique({
+        where: { id: emetteurId }
       });
       
-      if (existingPieces !== piecesJointes.length) {
-        throw new NotFoundException('Une ou plusieurs pièces jointes sont introuvables');
+      if (!emetteur) {
+        console.error('Émetteur non trouvé avec ID:', emetteurId);
+        throw new NotFoundException('Émetteur non trouvé');
       }
-    }
+      console.log('Émetteur trouvé:', emetteur.email);
 
-    // 4. Créer la conversation si nécessaire
-    let conversationId: string | undefined;
-    if (createConvocationDto.avecChat) {
-      const conversation = await this.prisma.conversation.create({
-        data: {
-          nom_conversation: `Convocation: ${createConvocationDto.titre}`,
-          type_conversation: 'groupe_convocation',
-          date_creation: new Date(),
-          createurId: emetteurId,
+      // 2. Vérifier si tous les participants existent
+      if (participants && participants.length > 0) {
+        console.log('Vérification des participants:', participants);
+        const participantsIds = participants.map(p => p.employeId);
+        console.log('IDs des participants à vérifier:', participantsIds);
+        
+        const existingEmployees = await this.prisma.employe.findMany({
+          where: { id: { in: participantsIds } },
+          select: { id: true },
+        });
+        
+        console.log('Participants existants trouvés:', existingEmployees);
+        
+        if (existingEmployees.length !== participantsIds.length) {
+          const existingIds = new Set(existingEmployees.map(e => e.id));
+          const missingIds = participantsIds.filter(id => !existingIds.has(id));
+          const errorMsg = `Les ID d'employés suivants sont introuvables: ${missingIds.join(', ')}`;
+          console.error(errorMsg);
+          throw new BadRequestException(errorMsg);
         }
-      });
-      conversationId = conversation.id;
-    }
+      } else {
+        console.log('Aucun participant spécifié pour cette convocation');
+      }
 
-    // 5. Créer la convocation
-    try {
+      // 3. Vérifier les pièces jointes
+      if (piecesJointes && piecesJointes.length > 0) {
+        console.log('Vérification des pièces jointes:', piecesJointes);
+        const existingPieces = await this.prisma.pieceJointe.count({
+          where: { id: { in: piecesJointes } }
+        });
+        
+        if (existingPieces !== piecesJointes.length) {
+          throw new NotFoundException('Une ou plusieurs pièces jointes sont introuvables');
+        }
+      }
+
+      // 4. Créer la conversation si nécessaire
+      let conversationId: string | undefined;
+      if (createConvocationDto.avecChat) {
+        console.log('Création d\'une conversation pour la convocation');
+        const conversation = await this.prisma.conversation.create({
+          data: {
+            nom: `Convocation: ${createConvocationDto.titre}`,
+            type: 'groupe_convocation',
+            dateCreation: new Date(),
+            createurId: emetteurId,
+          }
+        });
+        conversationId = conversation.id;
+        console.log('Conversation créée avec ID:', conversationId);
+      }
+
+      // 5. Créer la convocation
+      console.log('Création de la convocation...');
+      
+      // Extraire uniquement les champs valides pour la convocation
+      const { 
+        titre, 
+        description, 
+        lieu, 
+        priorite, 
+        ...rest 
+      } = convocationData;
+      
       const convocation = await this.prisma.convocation.create({
         data: {
-          ...convocationData,
-          date_convocation: new Date(date_convocation),
-          heure_debut,
-          heure_fin: heure_fin || null,
+          titre,
+          description,
+          lieu,
+          priorite,
+          dateConvocation: new Date(date_convocation),
+          heureDebut: heure_debut,
+          heureFin: heure_fin || null,
           emetteurId: emetteurId,
+          dateCreation: new Date(),
+          dateMiseAJour: new Date(),
           conversationId,
-          
-          participants: {
+          participants: participants && participants.length > 0 ? {
             create: participants.map(participant => ({
               employeId: participant.employeId,
               statut: 'ENVOYE',
-              date_mise_a_jour: new Date(),
+              dateMiseAJour: new Date(),
               remarques: participant.remarque || null,
             })),
-          },
-          piecesJointes: {
-            create: piecesJointes.map(pieceJointeId => ({
-              id: pieceJointeId,
-              nom_fichier: 'temp', // Ces valeurs doivent être fournies
-              chemin: 'temp',
-              type_mime: 'temp',
-              taille: 0,
-            }))
-          }
+          } : undefined,
+          piecesJointes: piecesJointes && piecesJointes.length > 0 ? {
+            connect: piecesJointes.map(id => ({ id }))
+          } : undefined,
         },
         include: this.getConvocationIncludeConfig(),
       });
 
+      console.log('Convocation créée avec succès:', convocation.id);
       return this.formatConvocationResponse(convocation as ConvocationWithRelations);
-
+      
     } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-        throw new ConflictException('Une convocation similaire existe déjà');
+      console.error('Erreur lors de la création de la convocation:', error);
+      
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        console.error('Erreur Prisma:', {
+          code: error.code,
+          meta: error.meta,
+          message: error.message
+        });
+        
+        if (error.code === 'P2002') {
+          throw new ConflictException('Une convocation similaire existe déjà');
+        }
       }
-      throw new InternalServerErrorException('Erreur lors de la création de la convocation');
+      
+      throw new InternalServerErrorException(`Erreur lors de la création de la convocation: ${error.message}`);
     }
   }
 
   /**
-   * Récupère toutes les convocations (avec filtres selon le rôle).
+   * Récupère toutes les convocations avec pagination et filtrage par rôle.
    */
   async findAll(
-    page: number, 
-    limit: number, 
+    page: number = 1,
+    limit: number = 10,
     user: { userId: string, role: string }
-  ): Promise<any> {
+  ): Promise<{
+    data: ConvocationResponse[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
     const skip = (page - 1) * limit;
 
-    let where: Prisma.ConvocationWhereInput = {};
+    // Construire la condition where en fonction du rôle de l'utilisateur
+    const where: Prisma.ConvocationWhereInput = {};
 
     // Un employé ne voit que ses convocations (en tant qu'émetteur ou participant)
-    if (user.role === 'employe' || user.role === 'manager') {
-      where = {
-        OR: [
-          { emetteurId: user.userId },
-          { participants: { some: { employeId: user.userId } } },
-        ],
-      };
+    if (user.role === 'EMPLOYE' || user.role === 'MANAGER') {
+      where.OR = [
+        { emetteurId: user.userId },
+        { participants: { some: { employeId: user.userId } } },
+      ];
     }
 
-    const [convocations, total] = await this.prisma.$transaction([
+    // Compter le nombre total de résultats pour la pagination
+    const [convocations, total] = await Promise.all([
       this.prisma.convocation.findMany({
         where,
-        take: limit,
         skip,
-        orderBy: { date_creation: 'desc' },
+        take: limit,
+        orderBy: { dateCreation: 'desc' },
         include: this.getConvocationIncludeConfig(),
       }),
       this.prisma.convocation.count({ where }),
     ]);
 
-    const mappedData = convocations.map(convocation => this.formatConvocationResponse(convocation as ConvocationWithRelations));
+    // Convertir chaque convocation au format de réponse
+    const data = convocations.map(convocation => 
+      this.formatConvocationResponse(convocation as ConvocationWithRelations)
+    );
 
     return {
-      data: mappedData,
+      data,
       total,
       page,
       limit,
@@ -300,7 +351,7 @@ export class ConvocationService {
       where: { id },
       data: {
         ...updateData,
-        date_convocation: updateData.date_convocation ? new Date(updateData.date_convocation) : undefined,
+        dateConvocation: updateData.date_convocation ? new Date(updateData.date_convocation) : undefined,
       },
       include: this.getConvocationIncludeConfig(),
     });
@@ -311,7 +362,7 @@ export class ConvocationService {
         .filter((p): p is UpdateParticipantDto & { employeId: string } => !!p.employeId)
         .map(p => {
           const dataToUpdate: Prisma.StatutConvocationUpdateInput = {
-            date_mise_a_jour: new Date(),
+            dateMiseAJour: new Date(),
           };
 
           if (p.statut) {
@@ -477,4 +528,48 @@ export class ConvocationService {
     
     return { message: `Convocation avec l'ID ${id} supprimée avec succès.` };
   }
+/**
+ * Met à jour le statut d'un participant à une convocation
+ */
+async updateParticipantStatus(
+  convocationId: string,
+  participantId: string,
+  statut: string,
+  remarque?: string
+): Promise<ConvocationResponse> {
+  // Vérifier que la convocation existe
+  const convocation = await this.prisma.convocation.findUnique({
+    where: { id: convocationId },
+    include: { participants: true }
+  });
+
+  if (!convocation) {
+    throw new NotFoundException(`Convocation avec l'ID ${convocationId} non trouvée.`);
+  }
+
+  // Vérifier que le participant est bien dans la convocation
+  const participant = convocation.participants.find(p => p.employeId === participantId);
+  if (!participant) {
+    throw new ForbiddenException("Vous n'êtes pas autorisé à modifier le statut de cette convocation.");
+  }
+
+  // Mettre à jour le statut
+  await this.prisma.statutConvocation.update({
+    where: {
+      convocationId_employeId: {
+        convocationId,
+        employeId: participantId
+      }
+    },
+    data: {
+      statut: statut as any, // Conversion en type Prisma
+      remarques: remarque,
+      dateMiseAJour: new Date(),
+      dateLecture: statut === 'LU' ? new Date() : undefined
+    }
+  });
+
+  // Retourner la convocation mise à jour
+  return this.findOne(convocationId);
+}
 }

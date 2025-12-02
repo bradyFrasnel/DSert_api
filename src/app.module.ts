@@ -8,6 +8,8 @@ import { PrismaModule } from './prisma/prisma.module';
 import { DepartementModule } from './departement/departement.module';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { RolesGuard } from './auth/roles.guard';
+import { ChatModule } from './chat/chat.module';
+import { ConvocationModule } from './convocation/convocation.module';
 
 @Module({
   imports: [
@@ -18,6 +20,8 @@ import { RolesGuard } from './auth/roles.guard';
     AuthModule,
     PrismaModule,
     DepartementModule,
+    ChatModule,
+    ConvocationModule,
   ],
   controllers: [AppController],
   providers: [

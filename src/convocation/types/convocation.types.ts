@@ -37,7 +37,6 @@ export interface ConvocationResponse {
   date_creation: Date;
   date_debut: Date;
   date_fin: string | null;
-
   emetteur: EmployeBase;
   participants: ParticipantResponse[];
   piecesJointes: PieceJointeResponse[];

@@ -24,22 +24,22 @@ async function main() {
   });
   console.log(`Département créé/trouvé: ${direction.nom} (ID: ${direction.id})`);
 
-  // 3. Création du Premier Utilisateur Admin (ou le met à jour s'il existe)
+  // 3. Création du Premier Utilisateur Admin (ou metle  à jour s'il existe)
   const adminEmail = 'admin@dsert.com';
   const adminUser = await prisma.employe.upsert({
     where: { email: adminEmail },
     update: { 
-        mot_de_passe: hashedPassword,
+        motDePasse: hashedPassword,
         departementId: direction.id,
     },
     create: {
       email: adminEmail,
-      mot_de_passe: hashedPassword,
-      nom_famille: 'Système',
+      motDePasse: hashedPassword,
+      nomFamille: 'Système',
       prenom: 'Admin',
       role: 'ADMIN', 
       departementId: direction.id,
-      date_embauche: new Date(),
+      dateEmbauche: new Date(),
     },
   });
   console.log(`Utilisateur Admin créé/mis à jour: ${adminUser.email}`);

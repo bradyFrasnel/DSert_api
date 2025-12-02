@@ -3,6 +3,7 @@ import { IsString, IsEmail, IsNotEmpty, IsStrongPassword, MinLength, MaxLength, 
 // Le rôle par défaut sera 'employe'
 // Nous n'incluons pas de rôle ici car il sera fixé à 'employe' dans le service d'auth
 export class RegisterDto {
+  @IsString()
   @IsEmail({}, { message: 'Format d\'email invalide' })
   @IsNotEmpty({ message: 'L\'email est obligatoire' })
   email: string;
@@ -17,7 +18,7 @@ export class RegisterDto {
   @IsNotEmpty({ message: 'Le nom est obligatoire' })
   @MinLength(2, { message: 'Le nom doit contenir au moins 2 caractères' })
   @MaxLength(50, { message: 'Le nom ne peut pas dépasser 50 caractères' })
-  nom_famille: string;
+  nomFamille: string;
 
   @IsString({ message: 'Le prénom doit être une chaîne de caractères' })
   @IsNotEmpty({ message: 'Le prénom est obligatoire' })
@@ -37,5 +38,6 @@ export class RegisterDto {
     },
   )
   password: string;
+  // nomFamille: any;
   // role: any;
 }

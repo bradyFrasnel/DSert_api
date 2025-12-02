@@ -9,7 +9,7 @@ export class UserPayloadDto {
   email: string;
 
   @IsString()
-  mot_de_passe: string;
+  motDePasse: string;
 
   @IsString()
   @IsNotEmpty()

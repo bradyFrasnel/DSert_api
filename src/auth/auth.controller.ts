@@ -34,7 +34,7 @@ export class AuthController {
     try {
       const user = await this.authService.validateUser(
         loginDto.email,
-        loginDto.mot_de_passe,
+        loginDto.motDePasse,
       );
       
       if (!user) {
@@ -72,7 +72,7 @@ export class AuthController {
     return {
       id: req.user.sub,
       email: req.user.email,
-      mot_de_passe: req.user.mot_de_passe,
+      motDePasse: req.user.motDePasse,
       role: req.user.role
     };
   }

@@ -2,10 +2,10 @@ import { Controller, Get, Post, Body, Param, Delete, Put, UseGuards, ParseIntPip
 import { DepartementService } from './departement.service';
 import { CreateDepartementDto } from './dto/create-departement.dto';
 import { UpdateDepartementDto } from './dto/update-departement.dto';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
-import { UserRole } from '../auth/roles.enum';
 import { RolesGuard } from '../auth/roles.guard';
+import { Role } from '@prisma/client';
 
 @Controller('departements')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -14,7 +14,7 @@ export class DepartementController {
 
   // requête pour créer un departement
   @Post()
-  @Roles(UserRole.ADMIN)
+  @Roles(Role.ADMIN)
   create(@Body() createDepartementDto: CreateDepartementDto) {
     return this.departementService.create(createDepartementDto);
   }
@@ -27,14 +27,14 @@ export class DepartementController {
 
   // requête pour trouver un departement spécifique
   @Get(':id')
-  @Roles(UserRole.ADMIN, UserRole.MANAGER, UserRole.EMPLOYE)
+  @Roles(Role.ADMIN, Role.MANAGER, Role.EMPLOYE)
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.departementService.findOne(id);
   }
 
   // requête pour mettre à jour un departement spécifique
   @Put(':id')
-  @Roles(UserRole.ADMIN)
+  @Roles(Role.ADMIN)
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateDepartementDto: UpdateDepartementDto,
@@ -44,7 +44,7 @@ export class DepartementController {
 
   // requête pour supprimer un departement spécifique
   @Delete(':id')
-  @Roles(UserRole.ADMIN)
+  @Roles(Role.ADMIN)
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.departementService.remove(id);
   }

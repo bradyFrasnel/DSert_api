@@ -23,14 +23,14 @@ export class AuthService {
         return null;
       }
 
-      const isPasswordValid = await bcrypt.compare(password, employe.mot_de_passe);
+      const isPasswordValid = await bcrypt.compare(password, employe.motDePasse);
 
       if (!isPasswordValid) {
         return null;
       }
 
       // Retourne l'objet employé sans le mot de passe
-      const { mot_de_passe, ...result } = employe;
+      const { motDePasse, ...result } = employe;
       return result;
     } catch (error) {
       throw new UnauthorizedException('Erreur lors de la validation des identifiants');
@@ -80,8 +80,8 @@ export class AuthService {
       const newEmploye = await this.prisma.employe.create({
         data: {
           prenom: registerDto.prenom,
-          nom_famille: registerDto.nom_famille,
-          mot_de_passe: hashedPassword,
+          nomFamille: registerDto.nomFamille,
+          motDePasse: hashedPassword,
           email: registerDto.email,
           role: registerDto.role.toUpperCase() as any,
           // role: 'MANAGER', // Rôle par défaut
@@ -90,9 +90,9 @@ export class AuthService {
         select: {
           id: true,
           prenom: true,
-          nom_famille: true,
+          nomFamille: true,
           email: true,
-          mot_de_passe: true,
+          motDePasse: true,
           role: true,
           departementId: true,
         },

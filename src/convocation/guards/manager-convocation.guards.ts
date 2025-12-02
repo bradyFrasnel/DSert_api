@@ -1,7 +1,7 @@
 import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { EmployeService } from '../../employe/employe.service';
 import { CreateConvocationDto } from '../dto/create-convocation.dto';
-import { UserRole } from '../../auth/roles.enum';
+import { Role } from '@prisma/client';
 
 /**
  * Ce Guard vérifie si un Manager est autorisé à créer une convocation pour un employé spécifique.
@@ -31,13 +31,13 @@ export class ManagerConvocationGuard implements CanActivate {
     const employeConvoqueId = createDto?.employeConvoqueId;
     
     // 1. Les Administrateurs ont toujours le droit de passer
-    if (managerPayload.role === UserRole.ADMIN) {
+    if (managerPayload.role === Role.ADMIN) {
       return true;
     }
 
     // Si ce n'est pas un Manager, le RolesGuard aurait déjà bloqué l'accès (403 Forbidden).
     // Nous pouvons donc assumer que c'est un Manager ici.
-    if (managerPayload.role !== UserRole.MANAGER) {
+    if (managerPayload.role !== Role.MANAGER) {
       // Ce cas ne devrait théoriquement pas être atteint si RolesGuard est utilisé correctement
       return false; 
     }

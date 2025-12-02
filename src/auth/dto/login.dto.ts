@@ -8,5 +8,5 @@ export class LoginDto {
 
   @IsString()
   @IsNotEmpty()
-  mot_de_passe: string;
+  motDePasse: string;
 }

@@ -41,11 +41,11 @@ enum PrioriteConvocation {
 // ------------------------------------------
 
 model Departement {
-  id            Int         @id @default(autoincrement())
-  nom           String      @unique
+  id            Int       @id @default(autoincrement())
+  nom           String    @unique
   description   String?
-  date_creation DateTime    @default(now())
-  actif         Boolean     @default(true)
+  dateCreation  DateTime  @default(now()) @map("date_creation")
+  actif         Boolean   @default(true)
   
   // Relations
   employes      Employe[]
@@ -54,25 +54,25 @@ model Departement {
 }
 
 model Employe {
-  id              String      @id @default(uuid())
-  nom_famille     String
+  id              String    @id @default(uuid())
+  nomFamille      String    @map("nom_famille")
   prenom          String
-  email           String      @unique
-  mot_de_passe    String      // Doit être stocké haché (Bcrypt)
-  role            Role        @default(EMPLOYE)
-  date_embauche   DateTime    @default(now())
-  date_sortie     DateTime?
-  actif           Boolean     @default(true)
+  email           String    @unique
+  motDePasse      String    @map("mot_de_passe") // Doit être stocké haché (Bcrypt)
+  role            Role      @default(EMPLOYE)
+  dateEmbauche    DateTime  @default(now()) @map("date_embauche")
+  dateSortie      DateTime? @map("date_sortie")
+  actif           Boolean   @default(true)
   
   // Relations
   departementId   Int
   departement     Departement @relation(fields: [departementId], references: [id])
   
   // Relations inverses
-  convocationsEmises     Convocation[]       @relation("Emetteur")
+  convocationsEmises     Convocation[]       @relation("emetteur")
   statutsConvocation     StatutConvocation[]
-  messagesEnvoyes        Message[]           @relation("MessagesAuteur")
-  conversationsCreees    Conversation[]      @relation("CreateurConversation")
+  messagesEnvoyes        Message[]           @relation("messagesAuteur")
+  conversationsCreees    Conversation[]      @relation("createurConversation")
   membresConversation    MembreConversation[]
   
   // Index et contraintes
@@ -86,35 +86,35 @@ model Employe {
 // ------------------------------------------
 
 model Convocation {
-  id                String              @id @default(uuid())
-  titre             String
-  description       String?
-  date_convocation  DateTime
-  heure_debut       String?             // Format: "HH:MM"
-  heure_fin         String?             // Format: "HH:MM"
-  lieu              String
-  priorite          PrioriteConvocation @default(NORMALE)
-  date_creation     DateTime            @default(now())
-  date_mise_a_jour  DateTime            @updatedAt
-  est_annulee       Boolean             @default(false)
+  id              String              @id @default(uuid())
+  titre           String
+  description     String?
+  dateConvocation DateTime            @map("date_convocation")
+  heureDebut      String?             @map("heure_debut") // Format: "HH:MM"
+  heureFin        String?             @map("heure_fin")   // Format: "HH:MM"
+  lieu            String
+  priorite        PrioriteConvocation @default(NORMALE)
+  dateCreation    DateTime            @default(now()) @map("date_creation")
+  dateMiseAJour   DateTime            @updatedAt @map("date_mise_a_jour")
+  estAnnulee      Boolean             @default(false) @map("est_annulee")
   
   // Relations
-  emetteurId        String
-  emetteur          Employe             @relation("Emetteur", fields: [emetteurId], references: [id])
+  emetteurId      String
+  emetteur        Employe             @relation("emetteur", fields: [emetteurId], references: [id])
   
   // Participants (relation many-to-many via StatutConvocation)
-  participants      StatutConvocation[]
+  participants    StatutConvocation[]
   
   // Chat associé
-  conversation      Conversation?       @relation(fields: [conversationId], references: [id])
-  conversationId    String?             @unique
+  conversation    Conversation?       @relation(fields: [conversationId], references: [id])
+  conversationId  String?             @unique
   
   // Pièces jointes (relation one-to-many)
-  piecesJointes     PieceJointe[]
+  piecesJointes   PieceJointe[]
   
   // Index
   @@index([emetteurId])
-  @@index([date_convocation])
+  @@index([dateConvocation])
   @@map("convocations")
 }
 
@@ -127,9 +127,9 @@ model StatutConvocation {
 
   // Données du statut
   statut          StatutConvocationType @default(ENVOYE)
-  date_mise_a_jour DateTime             @default(now())
+  dateMiseAJour   DateTime              @default(now()) @map("date_mise_a_jour")
   remarques       String?
-  date_lecture    DateTime?
+  dateLecture     DateTime?             @map("date_lecture")
   
   // Relations
   convocation     Convocation           @relation(fields: [convocationId], references: [id], onDelete: Cascade)
@@ -137,64 +137,70 @@ model StatutConvocation {
   
   // Index
   @@index([statut])
-  @@index([date_mise_a_jour])
+  @@index([dateMiseAJour])
   @@map("statuts_convocation")
 }
 
 model PieceJointe {
   id              String      @id @default(uuid())
-  nom_fichier     String
-  chemin          String      // Chemin du fichier sur le serveur
-  type_mime       String      // Type MIME du fichier
-  taille          Int         // Taille en octets
-  date_upload     DateTime    @default(now())
+  nomFichier      String      @map("nom_fichier") @db.VarChar(255)
+  chemin          String      @db.VarChar(255) // Chemin du fichier sur le serveur
+  typeMime        String      @map("type_mime") @db.VarChar(100) // Type MIME du fichier
+  taille          Int         @default(0) // Taille en octets
+  dateUpload      DateTime    @default(now()) @map("date_upload") @db.Timestamptz(6)
   
   // Relations
-  convocationId   String
+  convocationId   String     @map("convocation_id")
   convocation     Convocation @relation(fields: [convocationId], references: [id], onDelete: Cascade)
   
+  // Index
+  @@index([convocationId])
   @@map("pieces_jointes")
 }
 
 // ------------------------------------------
-// 3. Chat de Groupe (Temps Réel)
+// 3. Gestion des Pièces Jointes
+// ------------------------------------------
+
+// ------------------------------------------
+// 4. Chat de Groupe (Temps Réel)
 // ------------------------------------------
 
 model Conversation {
-  id                String              @id @default(uuid())
-  nom_conversation  String
-  description       String?
-  type_conversation String              // "groupe_convocation" ou "direct_message"
-  date_creation     DateTime            @default(now())
-  est_active        Boolean             @default(true)
+  id              String              @id @default(uuid())
+  nom             String              @map("nom_conversation")
+  description     String?
+  type            String              @map("type_conversation") // "groupe_convocation" ou "direct_message"
+  dateCreation    DateTime            @default(now()) @map("date_creation")
+  estActive       Boolean             @default(true) @map("est_active")
   
   // Relations
-  convocation       Convocation?       // Nullable pour les conversations directes
-  createurId        String
-  createur          Employe            @relation("CreateurConversation", fields: [createurId], references: [id])
+  convocation     Convocation?       // Nullable pour les conversations directes
+  createurId      String             @map("createur_id")
+  createur        Employe            @relation("createurConversation", fields: [createurId], references: [id])
   
   // Relations inverses
-  membres           MembreConversation[]
-  messages          Message[]
+  membres         MembreConversation[]
+  messages        Message[]
   
   // Index
   @@index([createurId])
-  @@index([type_conversation])
+  @@index([type])
   @@map("conversations")
 }
 
 model MembreConversation {
   id              String        @id @default(uuid())
-  date_ajout     DateTime      @default(now())
-  date_sortie    DateTime?
-  est_admin      Boolean       @default(false)
+  dateAjout       DateTime      @default(now()) @map("date_ajout")
+  dateSortie      DateTime?     @map("date_sortie")
+  estAdmin        Boolean       @default(false) @map("est_admin")
   
   // Relations
-  conversationId String
-  conversation   Conversation  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  conversationId  String
+  conversation    Conversation  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   
-  employeId      String
-  employe        Employe       @relation(fields: [employeId], references: [id], onDelete: Cascade)
+  employeId       String
+  employe         Employe       @relation(fields: [employeId], references: [id], onDelete: Cascade)
   
   // Contrainte d'unicité
   @@unique([conversationId, employeId])
@@ -202,25 +208,25 @@ model MembreConversation {
 }
 
 model Message {
-  id              String        @id @default(uuid())
-  contenu         String
-  date_envoi      DateTime      @default(now())
-  est_modifie     Boolean       @default(false)
-  date_modification DateTime?
+  id                String        @id @default(uuid())
+  contenu           String
+  dateEnvoi         DateTime      @default(now()) @map("date_envoi")
+  estModifie        Boolean       @default(false) @map("est_modifie")
+  dateModification  DateTime?     @map("date_modification")
   
   // Relations
-  conversationId  String
-  conversation    Conversation  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  conversationId    String
+  conversation      Conversation  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   
-  auteurId        String
-  auteur          Employe       @relation("MessagesAuteur", fields: [auteurId], references: [id])
+  auteurId          String
+  auteur            Employe       @relation("messagesAuteur", fields: [auteurId], references: [id])
   
   // Pour les messages supprimés
-  est_supprime    Boolean       @default(false)
+  estSupprime       Boolean       @default(false) @map("est_supprime")
   
   // Index
   @@index([conversationId])
   @@index([auteurId])
-  @@index([date_envoi])
+  @@index([dateEnvoi])
   @@map("messages")
 }

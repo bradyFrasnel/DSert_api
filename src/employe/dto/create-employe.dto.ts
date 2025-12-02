@@ -1,6 +1,7 @@
 // src/employe/dto/create-employe.dto.ts
 
-import { IsEmail, IsNotEmpty, IsString, IsInt, IsIn } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsString, IsInt, IsEnum } from 'class-validator';
+import { Role } from '@prisma/client';
 
 export class CreateEmployeDto {
   @IsEmail()
@@ -9,19 +10,19 @@ export class CreateEmployeDto {
 
   @IsString()
   @IsNotEmpty()
-  mot_de_passe: string;
+  motDePasse: string;
 
   @IsString()
   @IsNotEmpty()
-  nom_famille: string;
+  nomFamille: string;
 
   @IsString()
   @IsNotEmpty()
   prenom: string;
 
-  @IsString()
-  @IsIn(['admin', 'manager', 'employe'])
-  role: 'admin' | 'manager' | 'employe';
+  @IsEnum(Role)
+  @IsNotEmpty()
+  role: Role;
 
   @IsInt()
   @IsNotEmpty()
