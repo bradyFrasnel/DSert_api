@@ -1,132 +1,177 @@
 import {
-    WebSocketGateway,
-    SubscribeMessage,
-    MessageBody,
-    WebSocketServer,
-    OnGatewayInit,
-    OnGatewayConnection,
-    OnGatewayDisconnect,
-    ConnectedSocket,
+  WebSocketGateway,
+  WebSocketServer,
+  SubscribeMessage,
+  MessageBody,
+  ConnectedSocket,
+  OnGatewayConnection,
+  OnGatewayDisconnect,
+  OnGatewayInit,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { ChatService } from './chat.service';
-import { CreateMessageDto } from './dto/create-message.dto';
 import { JwtService } from '@nestjs/jwt';
-import { UnauthorizedException } from '@nestjs/common';
-import { JwtPayload } from '../auth/jwt.strategy'; // Réutilisation de l'interface du JWT
+import { Logger, UnauthorizedException } from '@nestjs/common';
+import { CreateMessageDto } from './dto/create-message.dto';
+import { JwtPayload } from '../auth/jwt.strategy';
+// import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 
-
-// Le Gateway sera accessible via l'URL de votre API REST (ex: http://localhost:3000)
 @WebSocketGateway({
-    cors: {
-        origin: '*', // Permettre les connexions depuis le frontend (à adapter en production)
-    },
+  cors: {
+    origin: process.env.FRONTEND_URL || '*',
+    credentials: true,
+  },
+  namespace: 'chat',
 })
 export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
-    @WebSocketServer() server: Server;
+  @WebSocketServer() server: Server;
+  private readonly logger = new Logger(ChatGateway.name);
 
-    constructor(
-        private readonly chatService: ChatService,
-        private readonly jwtService: JwtService, // Injecté grâce à l'export du AuthModule
-    ) {}
+  constructor(
+    private readonly chatService: ChatService,
+    private readonly jwtService: JwtService,
+  ) {}
 
-    afterInit(server: Server) {
-        console.log('Chat Gateway initialisé.');
+  afterInit(server: Server) {
+    this.logger.log('WebSocket Gateway initialisé');
+  }
+
+  async handleConnection(client: Socket) {
+    try {
+      const token = this.getTokenFromSocket(client);
+      if (!token) {
+        throw new UnauthorizedException('Token manquant');
+      }
+
+      const payload = this.jwtService.verify<JwtPayload>(token);
+      if (!payload) {
+        throw new UnauthorizedException('Token invalide');
+      }
+
+      // Stocker les informations de l'utilisateur dans la socket
+      client.data.user = {
+        id: payload.sub,
+        email: payload.email,
+        role: payload.role,
+      };
+
+      // Rejoindre une room personnelle pour les notifications
+      client.join(`user_${payload.sub}`);
+
+      this.logger.log(`Client connecté: ${client.id} (User ID: ${payload.sub})`);
+
+      // Informer l'utilisateur qu'il est bien connecté
+      client.emit('connected', { userId: payload.sub });
+    } catch (error) {
+      this.logger.error(`Erreur de connexion: ${error.message}`);
+      client.emit('error', { message: 'Échec de l\'authentification' });
+      client.disconnect();
+    }
+  }
+
+  handleDisconnect(client: Socket) {
+    if (client.data.user) {
+      this.logger.log(`Client déconnecté: ${client.id} (User ID: ${client.data.user.id})`);
+    }
+  }
+
+  @SubscribeMessage('joinConversation')
+  async handleJoinConversation(
+    @MessageBody() conversationId: string,
+    @ConnectedSocket() client: Socket,
+  ) {
+    try {
+      const userId = client.data.user?.id;
+      if (!userId) {
+        throw new UnauthorizedException('Non authentifié');
+      }
+
+      // Vérifier que l'utilisateur est membre de la conversation
+      const isMember = await this.chatService['prisma'].membreConversation.findFirst({
+        where: {
+          conversationId,
+          employeId: userId,
+          dateSortie: null,
+        },
+      });
+
+      if (!isMember) {
+        throw new Error('Vous n\'êtes pas membre de cette conversation');
+      }
+
+      // Rejoindre la room de la conversation
+      client.join(`conversation_${conversationId}`);
+
+      // Envoyer l'historique des messages
+      const messages = await this.chatService.getMessages(conversationId, userId, 50, 0);
+      client.emit('conversationHistory', messages);
+
+      // Informer les autres membres
+      client.to(`conversation_${conversationId}`).emit('userJoined', {
+        userId,
+        conversationId,
+        timestamp: new Date(),
+      });
+
+      return { status: 'success', conversationId };
+    } catch (error) {
+      client.emit('error', { message: error.message });
+      return { status: 'error', message: error.message };
+    }
+  }
+
+  @SubscribeMessage('sendMessage')
+  async handleMessage(
+    @MessageBody() createMessageDto: CreateMessageDto,
+    @ConnectedSocket() client: Socket,
+  ) {
+    try {
+      const userId = client.data.user?.id;
+      if (!userId) {
+        throw new UnauthorizedException('Non authentifié');
+      }
+
+      // Créer le message
+      const message = await this.chatService.createMessage(createMessageDto, userId);
+
+      // Diffuser le message à tous les membres de la conversation
+      this.server.to(`conversation_${createMessageDto.conversationId}`).emit('newMessage', message);
+
+      return { status: 'success', message };
+    } catch (error) {
+      client.emit('error', { message: error.message });
+      return { status: 'error', message: error.message };
+    }
+  }
+
+  @SubscribeMessage('typing')
+  handleTyping(
+    @MessageBody() data: { conversationId: string; isTyping: boolean },
+    @ConnectedSocket() client: Socket,
+  ) {
+    const userId = client.data.user?.id;
+    if (!userId) return;
+
+    // Informer les autres membres de la conversation que l'utilisateur est en train d'écrire
+    client.to(`conversation_${data.conversationId}`).emit('userTyping', {
+      userId,
+      isTyping: data.isTyping,
+    });
+  }
+
+  private getTokenFromSocket(client: Socket): string | null {
+    // Vérifier d'abord dans les query params
+    const tokenQuery = client.handshake.query?.token;
+    if (tokenQuery && typeof tokenQuery === 'string') {
+      return tokenQuery;
     }
 
-    /**
-     * Authentifie l'utilisateur via son token JWT lors de la connexion.
-     */
-    async handleConnection(client: Socket, ...args: any[]) {
-        try {
-            const token = client.handshake.auth.token || (client.handshake.query.token as string);
-
-            if (!token) {
-                return client.disconnect(true);
-            }
-
-            // Vérifier le token et extraire le payload
-            const payload: JwtPayload = this.jwtService.verify(token);
-
-            // Stocker les infos dans l'objet Socket
-            client.data.user = { employeId: payload.sub, email: payload.email, role: payload.role };
-
-            // Joindre une room spécifique à l'utilisateur (utile pour les notifications)
-            client.join(client.data.user.employeId);
-
-            console.log(`Client connecté: ${client.id} (Employé ID: ${client.data.user.employeId})`);
-
-        } catch (e) {
-            console.error('Erreur d\'authentification Socket:', e.message);
-            client.disconnect(true);
-        }
+    // Vérifier dans les headers
+    const authHeader = client.handshake.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      return authHeader.split(' ')[1];
     }
 
-    /**
-     * Gère la déconnexion d'un client.
-     */
-    handleDisconnect(client: Socket) {
-        if (client.data.user) {
-            console.log(`Client déconnecté: ${client.id} (Employé ID: ${client.data.user.employeId})`);
-        }
-    }
-
-    /**
-     * Événement: 'sendMessage' - Reçoit un message, l'enregistre et l'émet.
-     */
-    @SubscribeMessage('sendMessage')
-    async handleMessage(
-        @MessageBody() createMessageDto: CreateMessageDto,
-        @ConnectedSocket() client: Socket,
-    ) {
-        const user = client.data.user;
-
-        if (!user) {
-            throw new UnauthorizedException('Non autorisé via Socket.');
-        }
-
-        try {
-            // 1. Enregistrer le message en base de données
-            const message = await this.chatService.createMessage(createMessageDto, user.employeId);
-
-            // 2. Définir le nom de la room (basé sur l'ID de la conversation)
-            const roomName = `conversation-${createMessageDto.conversationId}`;
-            
-            // 3. Émettre l'événement 'newMessage' à tous les clients de cette conversation (room)
-            this.server.to(roomName).emit('newMessage', message);
-            
-        } catch (error) {
-            client.emit('error', { message: error.message || 'Erreur lors de l\'envoi du message.' });
-        }
-    }
-    
-    /**
-     * Événement: 'joinConversation' - Permet au client de joindre la room Socket.io d'une conversation.
-     * C'est essentiel pour recevoir les messages de cette conversation.
-     */
-    @SubscribeMessage('joinConversation')
-    async handleJoinConversation(
-        @MessageBody() conversationId: string,
-        @ConnectedSocket() client: Socket,
-    ) {
-        if (!client.data.user) {
-            return client.emit('error', { message: 'Non autorisé à rejoindre la conversation.' });
-        }
-        
-        const roomName = `conversation-${conversationId}`;
-        client.join(roomName);
-        
-        console.log(`Client ${client.data.user.employeId} a rejoint la room: ${roomName}`);
-        
-        // Optionnel: Envoyer l'historique au client qui vient de joindre
-        try {
-            const messages = await this.chatService.getMessages(conversationId);
-            client.emit('conversationHistory', messages);
-        } catch (error) { 
-             client.emit('error', { message: 'Erreur lors de la récupération de l\'historique.' });
-        }
-        
-        // Notifier la room que l'utilisateur a rejoint
-        this.server.to(roomName).emit('userJoined', client.data.user.employeId);
-    }
+    return null;
+  }
 }

@@ -26,6 +26,7 @@ export class AuthService {
       const isPasswordValid = await bcrypt.compare(password, employe.motDePasse);
 
       if (!isPasswordValid) {
+        console.log(`[AuthService] Mot de passe invalide pour l'utilisateur: ${email}`);
         return null;
       }
 

@@ -11,6 +11,6 @@ export class CreateMessageDto {
 
   @IsString()
   @IsNotEmpty()
-  @MaxLength(100000) // Limite de 1000 caractères pour le contenu
+  @MaxLength(100000)
   contenu: string;
 }

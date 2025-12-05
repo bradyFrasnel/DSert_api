@@ -20,6 +20,8 @@ import { RegisterDto } from './dto/register.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { UserPayloadDto } from './dto/user-payload.dto';
 import { Public } from './decorators/public.decorator';
+import { Headers } from '@nestjs/common';
+
 
 @Controller('auth')
 export class AuthController {
@@ -27,25 +29,32 @@ export class AuthController {
   
 // methode post pour login
   @Public()
-  @Post('login')
-  @HttpCode(HttpStatus.OK)
-  @UsePipes(new ValidationPipe({ whitelist: true }))
-  async login(@Body() loginDto: LoginDto) {
-    try {
-      const user = await this.authService.validateUser(
-        loginDto.email,
-        loginDto.motDePasse,
-      );
-      
-      if (!user) {
-        throw new UnauthorizedException('Identifiants invalides');
-      }
-      
-      return this.authService.login(user);
-    } catch (error) {
-      throw new UnauthorizedException('Échec de la connexion');
+@Post('login')
+@HttpCode(HttpStatus.OK)
+@UsePipes(new ValidationPipe({ whitelist: true }))
+async login(@Body() loginDto: LoginDto, @Headers() headers: any) {
+  try {
+    console.log('--- NOUVELLE REQUÊTE SUR /login ---');
+    console.log('Headers reçus:', JSON.stringify(headers, null, 2));
+    console.log('Corps (body) reçu:', loginDto);
+    console.log('------------------------------------');
+
+    const user = await this.authService.validateUser(
+      loginDto.email,
+      loginDto.motDePasse,
+    );
+    
+    if (!user) {
+      console.log('Aucun utilisateur trouvé ou mot de passe incorrect pour:', loginDto.email);
+      throw new UnauthorizedException('Identifiants invalides');
     }
+    
+    return this.authService.login(user);
+  } catch (error) {
+    console.error('Erreur lors de la connexion:', error);
+    throw new UnauthorizedException('Échec de la connexion');
   }
+}
 
   // Route d'inscription
   @Public()
