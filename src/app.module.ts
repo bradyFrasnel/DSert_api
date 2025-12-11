@@ -10,6 +10,7 @@ import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { RolesGuard } from './auth/roles.guard';
 import { ChatModule } from './chat/chat.module';
 import { ConvocationModule } from './convocation/convocation.module';
+import { EmployeModule } from './employe/employe.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { ConvocationModule } from './convocation/convocation.module';
     DepartementModule,
     ChatModule,
     ConvocationModule,
+    EmployeModule
   ],
   controllers: [AppController],
   providers: [

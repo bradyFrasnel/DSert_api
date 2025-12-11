@@ -36,14 +36,14 @@ export class EmployeController {
   }
 
   @Get()
-  @Roles(Role.ADMIN, Role.MANAGER)
+  @Roles(Role.ADMIN, Role.MANAGER, Role.EMPLOYE)
   async findAll(
     @Query('page') page = '1',
     @Query('limit') limit = '10',
     @GetUser() user: Omit<Employe, 'mot_de_passe'>
   ) {
     // Les managers ne peuvent voir que les employés de leur département
-    if (user.role === Role.MANAGER) {
+    if (user.role === Role.MANAGER || user.role === Role.EMPLOYE) {
       const employes = await this.employeService.findByDepartment(user.departementId);
       return { 
         data: employes, 
@@ -60,7 +60,7 @@ export class EmployeController {
   }
 
   @Get(':id')
-  @Roles(Role.ADMIN, Role.MANAGER)
+  @Roles(Role.ADMIN, Role.MANAGER, Role.EMPLOYE)
   async findOne(@Param('id') id: string, @GetUser() user: Employe) {
     const employe = await this.employeService.findOneById(id);
     

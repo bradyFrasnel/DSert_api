@@ -7,13 +7,12 @@ async function bootstrap() {
   app.setGlobalPrefix('api');
   // Autoriser les requêtes depuis le frontend (configurable via FRONTEND_URL)
   app.enableCors({
-    origin: true || 'http://localhost:3000',
-    credentials: true,
-  });
-
-  const port = Number(process.env.PORT ?? 3001);
+  origin: ['http://localhost:3000', 'http://192.168.1.67:4000'],
+  credentials: true,
+});
+  const port = Number(process.env.PORT?? 4001);
   await app.listen(port, '0.0.0.0');
-  console.log(`API server listening on port http://0.0.0.0:${port}`);
+  console.log(`le serveur API est en écoute sur http://0.0.0.0:${port}`);
 
 
   const config = new DocumentBuilder()
