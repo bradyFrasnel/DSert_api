@@ -10,7 +10,7 @@ export class CreateEmployeDto {
 
   @IsString()
   @IsNotEmpty()
-  motDePasse: string;
+  password: string;
 
   @IsString()
   @IsNotEmpty()

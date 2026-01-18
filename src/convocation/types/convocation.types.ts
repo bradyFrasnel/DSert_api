@@ -3,7 +3,6 @@ import { StatutConvocation, PrioriteConvocation } from '@prisma/client';
 export type StatutConvocationType = StatutConvocation;
 export type PrioriteConvocationType = PrioriteConvocation;
 
-
 export interface EmployeBase {
   id: string;
   nom: string;

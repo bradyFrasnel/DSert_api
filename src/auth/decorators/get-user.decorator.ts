@@ -4,7 +4,7 @@ import { Employe } from '@prisma/client';
 /**
  * Décorateur personnalisé pour extraire l'utilisateur authentifié de la requête
  * Utilisé dans les contrôleurs pour accéder facilement aux informations de l'utilisateur connecté
- * 
+ *
  * @example
  * async getProfile(@GetUser() user: Employe) {
  *   return user;

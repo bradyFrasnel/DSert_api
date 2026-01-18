@@ -1,9 +1,23 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request, Query, Put, UsePipes, ValidationPipe } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+  Request,
+  Query,
+  Put,
+  UsePipes,
+  ValidationPipe,
+} from '@nestjs/common';
 import { ConvocationService } from './convocation.service';
 import { CreateConvocationDto } from './dto/create-convocation.dto';
 import { UpdateConvocationDto } from './dto/update-convocation.dto';
 import { CreateParticipantDto } from './dto/participant.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ApiTags, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { Roles } from 'src/auth/roles.decorator';
 import { RolesGuard } from 'src/auth/roles.guard';
@@ -21,7 +35,10 @@ export class ConvocationController {
   @Post()
   @UseGuards(RolesGuard, ManagerConvocationGuard)
   @Roles(Role.ADMIN, Role.MANAGER)
-  async create(@Body() createConvocationDto: CreateConvocationDto, @Request() req) {
+  async create(
+    @Body() createConvocationDto: CreateConvocationDto,
+    @Request() req,
+  ) {
     console.log('User object from request:', req.user); // Log pour débogage
     console.log('User ID from request:', req.user?.id); // Log pour débogage
     if (!req.user?.id) {
@@ -39,13 +56,12 @@ export class ConvocationController {
   async findAll(
     @Query('page') page = 1,
     @Query('limit') limit = 10,
-    @Request() req
+    @Request() req,
   ) {
-    return this.convocationService.findAll(
-      Number(page),
-      Number(limit),
-      { userId: req.user.id, role: req.user.role }
-    );
+    return this.convocationService.findAll(Number(page), Number(limit), {
+      userId: req.user.id,
+      role: req.user.role,
+    });
   }
 
   // requête pour trouver une convocation spécifique
@@ -63,9 +79,13 @@ export class ConvocationController {
   async update(
     @Param('id') id: string,
     @Body() updateConvocationDto: UpdateConvocationDto,
-    @Request() req
+    @Request() req,
   ) {
-    return this.convocationService.update(id, updateConvocationDto, req.user.userId);
+    return this.convocationService.update(
+      id,
+      updateConvocationDto,
+      req.user.id,
+    );
   }
 
   // requête pour supprimer une convocation
@@ -73,7 +93,7 @@ export class ConvocationController {
   @UseGuards(RolesGuard, ManagerConvocationGuard)
   @Roles(Role.ADMIN, Role.MANAGER)
   async remove(@Param('id') id: string, @Request() req) {
-    return this.convocationService.remove(id, req.user.userId);
+    return this.convocationService.remove(id, req.user.id);
   }
 
   // requête pour ajouter des participants à une convocation
@@ -83,9 +103,13 @@ export class ConvocationController {
   async addParticipants(
     @Param('id') id: string,
     @Body() participants: CreateParticipantDto[],
-    @Request() req
+    @Request() req,
   ) {
-    return this.convocationService.addParticipants(id, participants, req.user.userId);
+    return this.convocationService.addParticipants(
+      id,
+      participants,
+      req.user.id,
+    );
   }
 
   // requête pour supprimer un participant d'une convocation
@@ -95,38 +119,48 @@ export class ConvocationController {
   async removeParticipant(
     @Param('id') id: string,
     @Param('participantId') participantId: string,
-    @Request() req
+    @Request() req,
   ) {
-    return this.convocationService.removeParticipant(id, participantId, req.user.userId);
-  }
-
-@Put(':id/status')
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(Role.ADMIN, Role.MANAGER, Role.EMPLOYE)
-@UsePipes(new ValidationPipe({ transform: true }))
-async updateStatus(
-  @Param('id') id: string,
-  @Body() updateStatusDto: { statut: string; remarque?: string },
-  @Request() req
-) {
-  // Seul un participant peut mettre à jour son propre statut
-  if (req.user.role === 'EMPLOYE') {
-    return this.convocationService.updateParticipantStatus(
+    return this.convocationService.removeParticipant(
       id,
-      req.user.id, // L'ID de l'utilisateur connecté
-      updateStatusDto.statut,
-      updateStatusDto.remarque
+      participantId,
+      req.user.id,
     );
   }
 
-  // Les admins/managers peuvent mettre à jour le statut de n'importe quel participant
-  // via la route existante de mise à jour
-  return this.convocationService.update(id, {
-    participants: [{
-      employeId: req.body.participantId || req.user.id,
-      statut: updateStatusDto.statut,
-      remarque: updateStatusDto.remarque
-    }]
-  }, req.user.id);
-}
+  @Put(':id/status')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.MANAGER, Role.EMPLOYE)
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async updateStatus(
+    @Param('id') id: string,
+    @Body() updateStatusDto: { statut: string; remarque?: string },
+    @Request() req,
+  ) {
+    // Seul un participant peut mettre à jour son propre statut
+    if (req.user.role === 'EMPLOYE') {
+      return this.convocationService.updateParticipantStatus(
+        id,
+        req.user.id, // L'ID de l'utilisateur connecté
+        updateStatusDto.statut,
+        updateStatusDto.remarque,
+      );
+    }
+
+    // Les admins/managers peuvent mettre à jour le statut de n'importe quel participant
+    // via la route existante de mise à jour
+    return this.convocationService.update(
+      id,
+      {
+        participants: [
+          {
+            employeId: req.body.participantId || req.user.id,
+            statut: updateStatusDto.statut,
+            remarque: updateStatusDto.remarque,
+          },
+        ],
+      },
+      req.user.id,
+    );
+  }
 }

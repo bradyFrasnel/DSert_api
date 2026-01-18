@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { EmployeController } from '../../src/employe/employe.controller';
 import { EmployeService } from '../../src/employe/employe.service';
-import { JwtAuthGuard } from '../../src/auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../src/auth/jwt-auth.guard';
 import { RolesGuard } from '../../src/auth/roles.guard';
 import { ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
@@ -143,7 +143,9 @@ describe('EmployeController', () => {
       ];
 
       // Configuration du mock pour un manager
-      (service.findByDepartment as jest.Mock).mockResolvedValue(departmentEmployees);
+      (service.findByDepartment as jest.Mock).mockResolvedValue(
+        departmentEmployees,
+      );
 
       const result = await controller.findAll('1', '10', {
         id: '2',
@@ -169,18 +171,20 @@ describe('EmployeController', () => {
     });
 
     it('devrait gérer la pagination correctement', async () => {
-      const mockEmployees = Array(15).fill(0).map((_, i) => ({
-        id: String(i + 1),
-        nomFamille: `User${i + 1}`,
-        prenom: 'Test',
-        email: `user${i + 1}@example.com`,
-        role: Role.EMPLOYE,
-        departementId: 1,
-        departement: {
-          id: 1,
-          nom: 'Ressources Humaines',
-        },
-      }));
+      const mockEmployees = Array(15)
+        .fill(0)
+        .map((_, i) => ({
+          id: String(i + 1),
+          nomFamille: `User${i + 1}`,
+          prenom: 'Test',
+          email: `user${i + 1}@example.com`,
+          role: Role.EMPLOYE,
+          departementId: 1,
+          departement: {
+            id: 1,
+            nom: 'Ressources Humaines',
+          },
+        }));
 
       // Configuration du mock pour la pagination
       (service.findAll as jest.Mock).mockImplementation((skip, take) => {

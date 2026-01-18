@@ -22,39 +22,41 @@ import { UserPayloadDto } from './dto/user-payload.dto';
 import { Public } from './decorators/public.decorator';
 import { Headers } from '@nestjs/common';
 
-
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
-  
-// methode post pour login
-  @Public()
-@Post('login')
-@HttpCode(HttpStatus.OK)
-@UsePipes(new ValidationPipe({ whitelist: true }))
-async login(@Body() loginDto: LoginDto, @Headers() headers: any) {
-  try {
-    console.log('--- NOUVELLE REQUÊTE SUR /login ---');
-    console.log('Headers reçus:', JSON.stringify(headers, null, 2));
-    console.log('Corps (body) reçu:', loginDto);
-    console.log('------------------------------------');
 
-    const user = await this.authService.validateUser(
-      loginDto.email,
-      loginDto.motDePasse,
-    );
-    
-    if (!user) {
-      console.log('Aucun utilisateur trouvé ou mot de passe incorrect pour:', loginDto.email);
-      throw new UnauthorizedException('Identifiants invalides');
+  // methode post pour login
+  @Public()
+  @Post('login')
+  @HttpCode(HttpStatus.OK)
+  @UsePipes(new ValidationPipe({ whitelist: true }))
+  async login(@Body() loginDto: LoginDto, @Headers() headers: any) {
+    try {
+      console.log('--- NOUVELLE REQUÊTE SUR /login ---');
+      console.log('Headers reçus:', JSON.stringify(headers, null, 2));
+      console.log('Corps (body) reçu:', loginDto);
+      console.log('------------------------------------');
+
+      const user = await this.authService.validateUser(
+        loginDto.email,
+        loginDto.password,
+      );
+
+      if (!user) {
+        console.log(
+          'Aucun utilisateur trouvé ou mot de passe incorrect pour:',
+          loginDto.email,
+        );
+        throw new UnauthorizedException('Identifiants invalides');
+      }
+
+      return this.authService.login(user);
+    } catch (error) {
+      console.error('Erreur lors de la connexion:', error);
+      throw new UnauthorizedException('Échec de la connexion');
     }
-    
-    return this.authService.login(user);
-  } catch (error) {
-    console.error('Erreur lors de la connexion:', error);
-    throw new UnauthorizedException('Échec de la connexion');
   }
-}
 
   // Route d'inscription
   @Public()
@@ -72,7 +74,7 @@ async login(@Body() loginDto: LoginDto, @Headers() headers: any) {
     }
   }
 
-// methode get pour profile
+  // methode get pour profile
   @Get('profile')
   // @UseGuards(JwtAuthGuard) sert à protéger la route
   @UseGuards(JwtAuthGuard)
@@ -80,9 +82,10 @@ async login(@Body() loginDto: LoginDto, @Headers() headers: any) {
     // Retourne les informations de l'utilisateur à partir du token JWT
     return {
       id: req.user.sub,
+      nomFamille: req.user.nomFamille,
+      prenom: req.user.prenom,
       email: req.user.email,
-      motDePasse: req.user.motDePasse,
-      role: req.user.role
+      role: req.user.role,
     };
   }
 }

@@ -23,8 +23,8 @@ describe('EmployeService', () => {
       departement: {
         id: 1,
         nom: 'Ressources Humaines',
-        description: 'Département des ressources humaines'
-      }
+        description: 'Département des ressources humaines',
+      },
     },
     {
       id: '2',
@@ -38,8 +38,8 @@ describe('EmployeService', () => {
       departement: {
         id: 2,
         nom: 'Informatique',
-        description: 'Département informatique'
-      }
+        description: 'Département informatique',
+      },
     },
   ];
 
@@ -81,9 +81,11 @@ describe('EmployeService', () => {
     it('devrait retourner une liste paginée de tous les employés', async () => {
       // Configuration du mock pour prisma.employe.findMany
       (prisma.employe.findMany as jest.Mock).mockResolvedValue(mockEmployees);
-      
+
       // Configuration du mock pour le comptage total
-      (prisma.employe.count as jest.Mock).mockResolvedValue(mockEmployees.length);
+      (prisma.employe.count as jest.Mock).mockResolvedValue(
+        mockEmployees.length,
+      );
 
       const result = await service.findAll(0, 10);
 
@@ -94,9 +96,9 @@ describe('EmployeService', () => {
         include: { departement: true },
         orderBy: { dateEmbauche: 'desc' },
       });
-      
+
       expect(prisma.employe.count).toHaveBeenCalled();
-      
+
       expect(result).toEqual({
         data: expect.arrayContaining([
           expect.objectContaining({
@@ -126,8 +128,12 @@ describe('EmployeService', () => {
 
     it('devrait gérer correctement la pagination', async () => {
       // Configuration du mock pour la pagination
-      (prisma.employe.findMany as jest.Mock).mockResolvedValue([mockEmployees[0]]);
-      (prisma.employe.count as jest.Mock).mockResolvedValue(mockEmployees.length);
+      (prisma.employe.findMany as jest.Mock).mockResolvedValue([
+        mockEmployees[0],
+      ]);
+      (prisma.employe.count as jest.Mock).mockResolvedValue(
+        mockEmployees.length,
+      );
 
       const result = await service.findAll(0, 1);
 
@@ -137,7 +143,7 @@ describe('EmployeService', () => {
         include: { departement: true },
         orderBy: { dateEmbauche: 'desc' },
       });
-      
+
       expect(result.data).toHaveLength(1);
       expect(result.total).toBe(mockEmployees.length);
     });

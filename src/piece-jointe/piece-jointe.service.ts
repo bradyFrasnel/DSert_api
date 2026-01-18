@@ -1,7 +1,17 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { PieceJointeResponseDto } from './dto/piece-jointe-response.dto';
-import { createReadStream, unlinkSync, existsSync, mkdirSync, writeFile } from 'fs';
+import {
+  createReadStream,
+  unlinkSync,
+  existsSync,
+  mkdirSync,
+  writeFile,
+} from 'fs';
 import { join } from 'path';
 import { promisify } from 'util';
 import { v4 as uuidv4 } from 'uuid';
@@ -34,7 +44,7 @@ export class PieceJointeService {
     // Créer un nom de fichier unique
     const fileExt = file.originalname.split('.').pop();
     const fileName = `${uuidv4()}.${fileExt}`;
-    
+
     // Créer le répertoire de téléchargement s'il n'existe pas
     const uploadDir = join(process.cwd(), 'uploads');
     if (!existsSync(uploadDir)) {
@@ -78,11 +88,11 @@ export class PieceJointeService {
 
     const uploadDir = join(process.cwd(), 'uploads');
     const filePath = join(uploadDir, pieceJointe.chemin);
-    
+
     if (!existsSync(filePath)) {
       throw new NotFoundException('Fichier non trouvé sur le serveur');
     }
-    
+
     return {
       stream: createReadStream(filePath),
       pieceJointe,
@@ -100,14 +110,18 @@ export class PieceJointeService {
     }
 
     // Vérifier les autorisations
-    const isAuthorized = 
-      pieceJointe.convocation.emetteurId === userId || 
-      (await this.prisma.employe.findUnique({ 
-        where: { id: userId } 
-      }))?.role === 'ADMIN';
+    const isAuthorized =
+      pieceJointe.convocation.emetteurId === userId ||
+      (
+        await this.prisma.employe.findUnique({
+          where: { id: userId },
+        })
+      )?.role === 'ADMIN';
 
     if (!isAuthorized) {
-      throw new ForbiddenException('Non autorisé à supprimer cette pièce jointe');
+      throw new ForbiddenException(
+        'Non autorisé à supprimer cette pièce jointe',
+      );
     }
 
     // Supprimer le fichier physique
@@ -128,19 +142,21 @@ export class PieceJointeService {
     return { message: 'Pièce jointe supprimée avec succès' };
   }
 
-  async getByConvocation(convocationId: string): Promise<PieceJointeResponseDto[]> {
+  async getByConvocation(
+    convocationId: string,
+  ): Promise<PieceJointeResponseDto[]> {
     const piecesJointes = await this.prisma.pieceJointe.findMany({
       where: { convocationId },
     });
 
-    return piecesJointes.map(pj => ({
+    return piecesJointes.map((pj) => ({
       id: pj.id,
       nomFichier: pj.nomFichier,
       typeMime: pj.typeMime,
       taille: pj.taille,
       url: `/pieces-jointes/${pj.id}/download`,
       convocationId: pj.convocationId,
-      dateCreation: pj.dateUpload,  // Utilisation de dateUpload au lieu de dateCreation
+      dateCreation: pj.dateUpload, // Utilisation de dateUpload au lieu de dateCreation
     }));
   }
 }

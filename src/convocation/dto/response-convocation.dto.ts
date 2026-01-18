@@ -1,19 +1,19 @@
-import { 
-  IsString, 
-  IsDate, 
-  IsEnum, 
-  IsArray, 
-  IsBoolean, 
+import {
+  IsString,
+  IsDate,
+  IsEnum,
+  IsArray,
+  IsBoolean,
   IsUUID,
   IsOptional,
-  IsNumber
+  IsNumber,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PrioriteConvocation } from './create-convocation.dto';
 
 // Décoration ApiProperty optionnelle (si @nestjs/swagger n'est pas installé)
 function ApiProperty(metadata: any): PropertyDecorator {
-  return (target: Object, propertyKey: string | symbol) => {};
+  return (target: object, propertyKey: string | symbol) => {};
 }
 
 export class ParticipantResponseDto {
@@ -33,14 +33,17 @@ export class ParticipantResponseDto {
   @IsString()
   email: string;
 
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'Statut de la convocation pour ce participant',
-    enum: ['envoye', 'lu', 'accepte', 'refuse', 'annule']
+    enum: ['envoye', 'lu', 'accepte', 'refuse', 'annule'],
   })
   @IsString()
   statut: string;
 
-  @ApiProperty({ description: 'Date de lecture de la convocation', required: false })
+  @ApiProperty({
+    description: 'Date de lecture de la convocation',
+    required: false,
+  })
   @IsDate()
   @IsOptional()
   dateLecture?: Date;
@@ -81,10 +84,10 @@ export class ConvocationResponseDto {
   @IsString()
   lieu: string;
 
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'Niveau de priorité',
     enum: PrioriteConvocation,
-    default: PrioriteConvocation.NORMALE
+    default: PrioriteConvocation.NORMALE,
   })
   @IsEnum(PrioriteConvocation)
   priorite: PrioriteConvocation;
@@ -101,44 +104,44 @@ export class ConvocationResponseDto {
   @IsBoolean()
   est_annulee: boolean;
 
-  @ApiProperty({ description: 'ID de l\'émetteur de la convocation' })
+  @ApiProperty({ description: "ID de l'émetteur de la convocation" })
   @IsUUID()
   emetteurId: string;
 
-  @ApiProperty({ description: 'Nom de l\'émetteur' })
+  @ApiProperty({ description: "Nom de l'émetteur" })
   @IsString()
   emetteurNom: string;
 
-  @ApiProperty({ description: 'Prénom de l\'émetteur' })
+  @ApiProperty({ description: "Prénom de l'émetteur" })
   @IsString()
   emetteurPrenom: string;
 
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'ID de la conversation associée, si elle existe',
-    required: false 
+    required: false,
   })
   @IsUUID()
   @IsOptional()
   conversationId?: string;
 
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'Indique si un chat est associé à cette convocation',
-    default: true 
+    default: true,
   })
   @IsBoolean()
   avecChat: boolean;
 
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'Liste des participants avec leur statut',
-    type: [ParticipantResponseDto] 
+    type: [ParticipantResponseDto],
   })
   @IsArray()
   participants: ParticipantResponseDto[];
 
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'Liste des IDs des pièces jointes',
     type: [String],
-    required: false
+    required: false,
   })
   @IsArray()
   @IsUUID(undefined, { each: true })
@@ -147,7 +150,10 @@ export class ConvocationResponseDto {
 }
 
 export class ConvocationListResponseDto {
-  @ApiProperty({ description: 'Liste des convocations', type: [ConvocationResponseDto] })
+  @ApiProperty({
+    description: 'Liste des convocations',
+    type: [ConvocationResponseDto],
+  })
   @IsArray()
   data: ConvocationResponseDto[];
 

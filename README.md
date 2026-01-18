@@ -31,6 +31,39 @@
 $ npm install
 ```
 
+## Configuration des variables d'environnement
+
+Créez un fichier `.env` à la racine du projet avec les variables suivantes :
+
+```env
+# Configuration de la base de données
+DATABASE_URL="postgresql://user:password@localhost:5432/dsert_db?schema=public"
+
+# Configuration JWT (OBLIGATOIRE)
+JWT_SECRET="votre_clé_secrète_jwt_très_longue_et_sécurisée_changez_moi"
+
+# Configuration du serveur (optionnel, défaut: 4001)
+PORT=4001
+
+# Configuration CORS (URL du frontend)
+FRONTEND_URL="http://localhost:3000"
+
+# Configuration du stockage de fichiers (optionnel, défaut: 'local')
+# Options: 'local' ou 's3'
+STORAGE_TYPE="local"
+
+# Configuration AWS S3 (optionnel, requis si STORAGE_TYPE=s3)
+AWS_S3_BUCKET_NAME=""
+AWS_REGION="us-east-1"
+AWS_ACCESS_KEY_ID=""
+AWS_SECRET_ACCESS_KEY=""
+
+# Configuration Bcrypt (optionnel, défaut: 10)
+SALT_ROUNDS=10
+```
+
+**Important** : La variable `JWT_SECRET` est obligatoire pour que l'application fonctionne correctement.
+
 ## Compile and run the project
 
 ```bash

@@ -27,7 +27,12 @@ export class PieceJointeController {
   @Post(':convocationId/upload')
   @UseInterceptors(FileInterceptor('fichier'))
   async uploadFile(
-    @UploadedFile() file: Express.Multer.File & { originalname: string; mimetype: string; size: number },
+    @UploadedFile()
+    file: Express.Multer.File & {
+      originalname: string;
+      mimetype: string;
+      size: number;
+    },
     @Param('convocationId') convocationId: string,
     @GetUser('id') userId: string,
   ) {
@@ -41,8 +46,9 @@ export class PieceJointeController {
     @Param('id') id: string,
     @Res({ passthrough: true }) res: Response,
   ): Promise<StreamableFile> {
-    const { stream, pieceJointe } = await this.pieceJointeService.downloadFile(id);
-    
+    const { stream, pieceJointe } =
+      await this.pieceJointeService.downloadFile(id);
+
     res.set({
       'Content-Type': pieceJointe.typeMime,
       'Content-Disposition': `attachment; filename="${pieceJointe.nomFichier}"`,
@@ -53,17 +59,12 @@ export class PieceJointeController {
   }
 
   @Delete(':id')
-  async deleteFile(
-    @Param('id') id: string,
-    @GetUser('id') userId: string,
-  ) {
+  async deleteFile(@Param('id') id: string, @GetUser('id') userId: string) {
     return this.pieceJointeService.deleteFile(id, userId);
   }
 
   @Get('convocation/:convocationId')
-  async getByConvocation(
-    @Param('convocationId') convocationId: string,
-  ) {
+  async getByConvocation(@Param('convocationId') convocationId: string) {
     return this.pieceJointeService.getByConvocation(convocationId);
   }
 }

@@ -5,13 +5,16 @@ export class UserPayloadDto {
   @IsNotEmpty()
   id: string; // ID de l'employé
 
+  @IsString()
+  nomFamille: string;
+
+  @IsString()
+  prenom: string;
+
   @IsEmail()
   email: string;
 
   @IsString()
-  motDePasse: string;
-
-  @IsString()
   @IsNotEmpty()
-  role: 'admin' | 'manager' | 'employe'; 
+  role: 'admin' | 'manager' | 'employe';
 }

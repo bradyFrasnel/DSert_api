@@ -4,11 +4,13 @@ import { Module } from '@nestjs/common';
 import { EmployeService } from './employe.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { EmployeController } from './employe.controller';
+import { StorageModule } from 'src/shared/storage/storage.module';
+import { ImageProcessorModule } from '../shared/utils/image-processor.module';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, StorageModule, ImageProcessorModule],
   providers: [EmployeService],
   controllers: [EmployeController],
-  exports: [EmployeService], // 3. Exportez le service pour qu'il soit utilisable par le AuthModule
+  exports: [EmployeService],
 })
 export class EmployeModule {}

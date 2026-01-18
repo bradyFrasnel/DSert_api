@@ -29,12 +29,12 @@ async function main() {
   const adminUser = await prisma.employe.upsert({
     where: { email: adminEmail },
     update: { 
-        motDePasse: hashedPassword,
+        password: hashedPassword,
         departementId: direction.id,
     },
     create: {
       email: adminEmail,
-      motDePasse: hashedPassword,
+      password: hashedPassword,
       nomFamille: 'Système',
       prenom: 'Admin',
       role: 'ADMIN', 

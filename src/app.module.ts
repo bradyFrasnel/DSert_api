@@ -11,6 +11,10 @@ import { RolesGuard } from './auth/roles.guard';
 import { ChatModule } from './chat/chat.module';
 import { ConvocationModule } from './convocation/convocation.module';
 import { EmployeModule } from './employe/employe.module';
+import { StorageModule } from './shared/storage/storage.module';
+import { MulterModule } from '@nestjs/platform-express';
+import { multerOptions } from './config/multer.config';
+import { FilesModule } from './files/file.module';
 
 @Module({
   imports: [
@@ -18,12 +22,15 @@ import { EmployeModule } from './employe/employe.module';
       isGlobal: true,
       envFilePath: '.env',
     }),
+    MulterModule.register(multerOptions),
+    StorageModule,
     AuthModule,
     PrismaModule,
     DepartementModule,
     ChatModule,
     ConvocationModule,
-    EmployeModule
+    EmployeModule,
+    FilesModule,
   ],
   controllers: [AppController],
   providers: [

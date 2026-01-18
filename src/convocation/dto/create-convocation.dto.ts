@@ -1,16 +1,16 @@
-import { 
-  IsString, 
-  IsNotEmpty, 
-  IsDateString, 
-  IsOptional, 
-  IsArray, 
-  IsEnum, 
+import {
+  IsString,
+  IsNotEmpty,
+  IsDateString,
+  IsOptional,
+  IsArray,
+  IsEnum,
   IsUUID,
   MaxLength,
   MinLength,
   IsBoolean,
   ValidateNested,
-  Matches
+  Matches,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -25,7 +25,9 @@ export enum PrioriteConvocation {
 }
 
 // Type utilitaire pour convertir entre les enums
-export function toPrismaPriorite(priorite: PrioriteConvocation): PrismaPriorite {
+export function toPrismaPriorite(
+  priorite: PrioriteConvocation,
+): PrismaPriorite {
   return priorite as unknown as PrismaPriorite;
 }
 
@@ -49,7 +51,9 @@ export class CreateConvocationDto {
 
   @IsString()
   @IsNotEmpty()
-  @MaxLength(1000, { message: 'La description ne peut pas dépasser 1000 caractères' })
+  @MaxLength(1000, {
+    message: 'La description ne peut pas dépasser 1000 caractères',
+  })
   description: string;
 
   @IsDateString()
@@ -59,14 +63,14 @@ export class CreateConvocationDto {
   @IsString()
   @IsNotEmpty()
   @Matches(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, {
-    message: 'Le format de l\'heure doit être HH:MM (ex: 14:30)'
+    message: "Le format de l'heure doit être HH:MM (ex: 14:30)",
   })
   heure_debut: string;
 
   @IsString()
   @IsOptional()
   @Matches(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, {
-    message: 'Le format de l\'heure doit être HH:MM (ex: 16:45)'
+    message: "Le format de l'heure doit être HH:MM (ex: 16:45)",
   })
   heure_fin?: string;
 
@@ -75,8 +79,8 @@ export class CreateConvocationDto {
   @MaxLength(200)
   lieu: string;
 
-  @IsEnum(PrioriteConvocation, { 
-    message: `La priorité doit être l'une des valeurs suivantes: ${Object.values(PrioriteConvocation).join(', ')}` 
+  @IsEnum(PrioriteConvocation, {
+    message: `La priorité doit être l'une des valeurs suivantes: ${Object.values(PrioriteConvocation).join(', ')}`,
   })
   @IsOptional()
   priorite?: PrioriteConvocation = PrioriteConvocation.NORMALE;
@@ -92,7 +96,10 @@ export class CreateConvocationDto {
 
   @IsArray()
   @IsOptional()
-  @IsUUID(undefined, { each: true, message: 'Chaque ID de pièce jointe doit être un UUID valide' })
+  @IsUUID(undefined, {
+    each: true,
+    message: 'Chaque ID de pièce jointe doit être un UUID valide',
+  })
   piecesJointes?: string[] = [];
-    employeConvoqueId: any;
+  employeConvoqueId: any;
 }

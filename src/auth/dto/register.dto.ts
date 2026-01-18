@@ -1,11 +1,21 @@
-import { IsString, IsEmail, IsNotEmpty, IsStrongPassword, MinLength, MaxLength, Matches, IsDate, IsIn } from 'class-validator';
+import {
+  IsString,
+  IsEmail,
+  IsNotEmpty,
+  IsStrongPassword,
+  MinLength,
+  MaxLength,
+  Matches,
+  IsDate,
+  IsIn,
+} from 'class-validator';
 
 // Le rôle par défaut sera 'employe'
 // Nous n'incluons pas de rôle ici car il sera fixé à 'employe' dans le service d'auth
 export class RegisterDto {
   @IsString()
-  @IsEmail({}, { message: 'Format d\'email invalide' })
-  @IsNotEmpty({ message: 'L\'email est obligatoire' })
+  @IsEmail({}, { message: "Format d'email invalide" })
+  @IsNotEmpty({ message: "L'email est obligatoire" })
   email: string;
 
   // @IsDate({},)
@@ -28,8 +38,12 @@ export class RegisterDto {
 
   @IsString({ message: 'Le mot de passe doit être une chaîne de caractères' })
   @IsNotEmpty({ message: 'Le mot de passe est obligatoire' })
-  @MinLength(8, { message: 'Le mot de passe doit contenir au moins 8 caractères' })
-  @MaxLength(100, { message: 'Le mot de passe ne peut pas dépasser 100 caractères' })
+  @MinLength(8, {
+    message: 'Le mot de passe doit contenir au moins 8 caractères',
+  })
+  @MaxLength(100, {
+    message: 'Le mot de passe ne peut pas dépasser 100 caractères',
+  })
   @Matches(
     /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/,
     {

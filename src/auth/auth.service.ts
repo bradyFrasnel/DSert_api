@@ -1,6 +1,11 @@
 // src/auth/auth.service.ts
 
-import { Injectable, UnauthorizedException, ConflictException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  ConflictException,
+  BadRequestException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { EmployeService } from '../employe/employe.service';
@@ -18,23 +23,30 @@ export class AuthService {
   async validateUser(email: string, password: string): Promise<any> {
     try {
       const employe = await this.employeService.findOneByEmail(email);
-      
+
       if (!employe) {
         return null;
       }
 
-      const isPasswordValid = await bcrypt.compare(password, employe.motDePasse);
+      const isPasswordValid = await bcrypt.compare(
+        password,
+        employe.password,
+      );
 
       if (!isPasswordValid) {
-        console.log(`[AuthService] Mot de passe invalide pour l'utilisateur: ${email}`);
+        console.log(
+          `[AuthService] Mot de passe invalide pour l'utilisateur: ${email}`,
+        );
         return null;
       }
 
       // Retourne l'objet employé sans le mot de passe
-      const { motDePasse, ...result } = employe;
+      const { password: _password, ...result } = employe;
       return result;
     } catch (error) {
-      throw new UnauthorizedException('Erreur lors de la validation des identifiants');
+      throw new UnauthorizedException(
+        'Erreur lors de la validation des identifiants',
+      );
     }
   }
 
@@ -50,6 +62,8 @@ export class AuthService {
         access_token: this.jwtService.sign(payload),
         employe: {
           id: employe.id,
+          prenom: employe.prenom,
+          nomFamille: employe.nomFamille,
           email: employe.email,
           role: employe.role,
         },
@@ -61,7 +75,9 @@ export class AuthService {
 
   async register(registerDto: RegisterDto) {
     // Vérifier si l'email est déjà utilisé
-    const existingUser = await this.employeService.findOneByEmail(registerDto.email);
+    const existingUser = await this.employeService.findOneByEmail(
+      registerDto.email,
+    );
     if (existingUser) {
       throw new ConflictException('Un compte avec cet email existe déjà');
     }
@@ -69,7 +85,7 @@ export class AuthService {
     try {
       // Récupérer le département par défaut (par exemple, le premier département disponible)
       const defaultDepartment = await this.prisma.departement.findFirst();
-      
+
       if (!defaultDepartment) {
         // eslint-disable-next-line prettier/prettier
         throw new BadRequestException('Aucun département trouvé. Veuillez d\'abord créer un département.');
@@ -77,12 +93,12 @@ export class AuthService {
 
       // Créer le nouvel employé avec le rôle 'employe' par défaut
       const hashedPassword = await bcrypt.hash(registerDto.password, 10);
-      
+
       const newEmploye = await this.prisma.employe.create({
         data: {
           prenom: registerDto.prenom,
           nomFamille: registerDto.nomFamille,
-          motDePasse: hashedPassword,
+          password: hashedPassword,
           email: registerDto.email,
           role: registerDto.role.toUpperCase() as any,
           // role: 'MANAGER', // Rôle par défaut
@@ -93,7 +109,7 @@ export class AuthService {
           prenom: true,
           nomFamille: true,
           email: true,
-          motDePasse: true,
+          password: true,
           role: true,
           departementId: true,
         },

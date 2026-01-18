@@ -10,10 +10,15 @@ import {
   Delete,
 } from '@nestjs/common';
 import { ChatService } from './chat.service';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CreateMessageDto } from './dto/create-message.dto';
 import { CreateConversationDto } from './dto/create-conversation.dto';
-import { ApiBearerAuth, ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+} from '@nestjs/swagger';
 
 @ApiTags('chat')
 @ApiBearerAuth()
@@ -26,12 +31,18 @@ export class ChatController {
   @ApiOperation({ summary: 'Créer une nouvelle conversation' })
   @ApiResponse({ status: 201, description: 'Conversation créée avec succès' })
   @ApiResponse({ status: 403, description: 'Accès refusé' })
-  createConversation(@Body() createConversationDto: CreateConversationDto, @Request() req) {
-    return this.chatService.createConversation(createConversationDto, req.user.id);
+  createConversation(
+    @Body() createConversationDto: CreateConversationDto,
+    @Request() req,
+  ) {
+    return this.chatService.createConversation(
+      createConversationDto,
+      req.user.id,
+    );
   }
 
   @Get('conversations')
-  @ApiOperation({ summary: 'Obtenir les conversations de l\'utilisateur' })
+  @ApiOperation({ summary: "Obtenir les conversations de l'utilisateur" })
   @ApiResponse({ status: 200, description: 'Liste des conversations' })
   getUserConversations(@Request() req) {
     return this.chatService.getUserConversations(req.user.id);
@@ -46,7 +57,7 @@ export class ChatController {
   }
 
   @Get('conversations/:conversationId/messages')
-  @ApiOperation({ summary: 'Obtenir les messages d\'une conversation' })
+  @ApiOperation({ summary: "Obtenir les messages d'une conversation" })
   @ApiResponse({ status: 200, description: 'Liste des messages' })
   @ApiResponse({ status: 403, description: 'Accès refusé' })
   getMessages(
@@ -55,7 +66,12 @@ export class ChatController {
     @Query('limit') limit = 50,
     @Query('offset') offset = 0,
   ) {
-    return this.chatService.getMessages(conversationId, req.user.id, +limit, +offset);
+    return this.chatService.getMessages(
+      conversationId,
+      req.user.id,
+      +limit,
+      +offset,
+    );
   }
 
   @Post('conversations/:conversationId/participants')
@@ -67,7 +83,11 @@ export class ChatController {
     @Body() userIds: string[],
     @Request() req,
   ) {
-    return this.chatService.addParticipants(conversationId, userIds, req.user.id);
+    return this.chatService.addParticipants(
+      conversationId,
+      userIds,
+      req.user.id,
+    );
   }
 
   @Delete('messages/:messageId')

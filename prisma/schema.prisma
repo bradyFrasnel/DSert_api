@@ -58,11 +58,12 @@ model Employe {
   nomFamille      String    @map("nom_famille")
   prenom          String
   email           String    @unique
-  motDePasse      String    @map("mot_de_passe") // Doit être stocké haché (Bcrypt)
+  password        String    @map("mot_de_passe") // Doit être stocké haché (Bcrypt)
   role            Role      @default(EMPLOYE)
   dateEmbauche    DateTime  @default(now()) @map("date_embauche")
   dateSortie      DateTime? @map("date_sortie")
   actif           Boolean   @default(true)
+  photoProfil String? @map("photo_profil") @db.VarChar(255)
   
   // Relations
   departementId   Int

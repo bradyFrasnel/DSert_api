@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateMessageDto } from './dto/create-message.dto';
 import { CreateConversationDto } from './dto/create-conversation.dto';
@@ -9,8 +13,12 @@ export class ChatService {
   constructor(private prisma: PrismaService) {}
 
   // Créer une nouvelle conversation
-  async createConversation(createConversationDto: CreateConversationDto, createurId: string) {
-    const { nom, description, participants, convocationId } = createConversationDto;
+  async createConversation(
+    createConversationDto: CreateConversationDto,
+    createurId: string,
+  ) {
+    const { nom, description, participants, convocationId } =
+      createConversationDto;
 
     // Vérifier que le créateur fait partie des participants
     if (!participants.includes(createurId)) {
@@ -26,7 +34,9 @@ export class ChatService {
     });
 
     if (participantsCount !== participants.length) {
-      throw new NotFoundException('Un ou plusieurs participants sont introuvables');
+      throw new NotFoundException(
+        'Un ou plusieurs participants sont introuvables',
+      );
     }
 
     // Créer la conversation
@@ -36,9 +46,11 @@ export class ChatService {
         description,
         type: convocationId ? 'groupe_convocation' : 'groupe',
         createur: { connect: { id: createurId } },
-        convocation: convocationId ? { connect: { id: convocationId } } : undefined,
+        convocation: convocationId
+          ? { connect: { id: convocationId } }
+          : undefined,
         membres: {
-          create: participants.map(participantId => ({
+          create: participants.map((participantId) => ({
             employe: { connect: { id: participantId } },
             estAdmin: participantId === createurId,
           })),
@@ -75,7 +87,9 @@ export class ChatService {
     });
 
     if (!isMember) {
-      throw new ForbiddenException('Vous n\'êtes pas membre de cette conversation');
+      throw new ForbiddenException(
+        "Vous n'êtes pas membre de cette conversation",
+      );
     }
 
     // Créer le message
@@ -99,7 +113,12 @@ export class ChatService {
   }
 
   // Obtenir les messages d'une conversation
-  async getMessages(conversationId: string, userId: string, limit = 50, offset = 0) {
+  async getMessages(
+    conversationId: string,
+    userId: string,
+    limit = 50,
+    offset = 0,
+  ) {
     // Vérifier que l'utilisateur est membre de la conversation
     const isMember = await this.prisma.membreConversation.findFirst({
       where: {
@@ -110,7 +129,9 @@ export class ChatService {
     });
 
     if (!isMember) {
-      throw new ForbiddenException('Vous n\'êtes pas membre de cette conversation');
+      throw new ForbiddenException(
+        "Vous n'êtes pas membre de cette conversation",
+      );
     }
 
     return this.prisma.message.findMany({
@@ -197,7 +218,11 @@ export class ChatService {
   }
 
   // Ajouter des participants à une conversation
-  async addParticipants(conversationId: string, userIds: string[], currentUserId: string) {
+  async addParticipants(
+    conversationId: string,
+    userIds: string[],
+    currentUserId: string,
+  ) {
     // Vérifier que l'utilisateur est administrateur de la conversation
     const isAdmin = await this.prisma.membreConversation.findFirst({
       where: {
@@ -209,7 +234,9 @@ export class ChatService {
     });
 
     if (!isAdmin) {
-      throw new ForbiddenException('Vous devez être administrateur pour ajouter des participants');
+      throw new ForbiddenException(
+        'Vous devez être administrateur pour ajouter des participants',
+      );
     }
 
     // Vérifier que les utilisateurs à ajouter existent
@@ -221,11 +248,15 @@ export class ChatService {
       select: { id: true },
     });
 
-    const existingUserIds = existingUsers.map(user => user.id);
-    const nonExistingUserIds = userIds.filter(id => !existingUserIds.includes(id));
+    const existingUserIds = existingUsers.map((user) => user.id);
+    const nonExistingUserIds = userIds.filter(
+      (id) => !existingUserIds.includes(id),
+    );
 
     if (nonExistingUserIds.length > 0) {
-      throw new NotFoundException(`Utilisateurs non trouvés: ${nonExistingUserIds.join(', ')}`);
+      throw new NotFoundException(
+        `Utilisateurs non trouvés: ${nonExistingUserIds.join(', ')}`,
+      );
     }
 
     // Vérifier qu'ils ne sont pas déjà membres
@@ -237,8 +268,10 @@ export class ChatService {
       },
     });
 
-    const existingMemberIds = existingMembers.map(member => member.employeId);
-    const newUserIds = existingUserIds.filter(id => !existingMemberIds.includes(id));
+    const existingMemberIds = existingMembers.map((member) => member.employeId);
+    const newUserIds = existingUserIds.filter(
+      (id) => !existingMemberIds.includes(id),
+    );
 
     if (newUserIds.length === 0) {
       return { count: 0, message: 'Aucun nouvel utilisateur à ajouter' };
@@ -246,7 +279,7 @@ export class ChatService {
 
     // Ajouter les nouveaux membres
     const result = await this.prisma.membreConversation.createMany({
-      data: newUserIds.map(userId => ({
+      data: newUserIds.map((userId) => ({
         conversationId,
         employeId: userId,
         estAdmin: false,
